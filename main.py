@@ -171,11 +171,20 @@ async def cmd_faq(message: types.Message, state: FSMContext):
 async def cmd_faq_question(call: types.CallbackQuery, state: FSMContext):
     question = int(call.data[4:])
     kb = InlineKeyboardMarkup(row_width=1)
-    if question == 1:
+    if question == 0:
+        kb.add(InlineKeyboardButton('Заявка в техподдержку', callback_data='support'))
+    elif question == 1:
         kb.add(InlineKeyboardButton('Тарифы', url='https://msu.umos.ru/?module=tariffs'))
     elif question == 2:
         kb.add(InlineKeyboardButton('Способы оплаты', url='https://msu.umos.ru/?module=oplata'))
     elif question == 3:
+        kb.add(InlineKeyboardButton('Личный кабинет', url='https://msu.umos.ru/?module=01_login'))
+    elif question == 4:
+        kb.add(InlineKeyboardButton('Заявка в техподдержку', callback_data='support'))
+    elif question == 5:
+        kb.add(InlineKeyboardButton('Личный кабинет', url='https://msu.umos.ru/?module=01_login'))
+        kb.add(InlineKeyboardButton('Заявка в техподдержку', callback_data='support'))
+    elif question == 6:
         kb.add(InlineKeyboardButton('Личный кабинет', url='https://msu.umos.ru/?module=01_login'))
     elif question == 9:
         kb.add(InlineKeyboardButton('Настройка роутера', url='https://msu.umos.ru/routers.html'))
@@ -204,6 +213,12 @@ async def cmd_next(call: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     await state.update_data(current_faq_page=user_data['current_faq_page'] - 1)
     await call.message.edit_reply_markup(keyboards.inline_faq_kb_1)
+
+
+@dp.callback_query_handler(text='support')
+async def cmd_support_inline(call: types.CallbackQuery):
+    await call.message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
+    await Support.dormitory.set()
 
 
 @dp.message_handler(commands="support")
@@ -348,6 +363,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
     if sent:
         await call.message.answer('Заявка успешно отправлена\!')
         await state.finish()
+        await call.message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
     else:
         await call.message.answer('Что-то пошло не так\. Попробуйте еще раз\.')
         await cmd_print(call.message, state)
