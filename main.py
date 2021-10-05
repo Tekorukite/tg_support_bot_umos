@@ -215,8 +215,8 @@ async def cmd_next(call: types.CallbackQuery, state: FSMContext):
     await call.message.edit_reply_markup(keyboards.inline_faq_kb_1)
 
 
-@dp.callback_query_handler(text='support')
-async def cmd_support_inline(call: types.CallbackQuery):
+@dp.callback_query_handler(text='support', state='*')
+async def cmd_support_inline(call: types.CallbackQuery, state: FSMContext):
     await call.message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
     await Support.dormitory.set()
 
