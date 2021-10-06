@@ -2,3 +2,4 @@ python-dotenv
 aiogram
 requests
 newrelic
+pyping
