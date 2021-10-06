@@ -1,4 +1,4 @@
 python-dotenv
 aiogram
 requests
-newreilc
+newrelic
