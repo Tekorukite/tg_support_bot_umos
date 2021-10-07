@@ -94,7 +94,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
     cur.execute("""CREATE TABLE IF NOT EXISTS users( userid INT PRIMARY KEY, name TEXT, tg_user_id INT);""")
     db.commit()
-    cur.execute("SELECT * FROM users where id = ?;", message.from_user.id)
+    cur.execute("SELECT * FROM users where tg_user_id = ?;", message.from_user.id)
     if len(cur.fetchall()) == 0:
         cur.execute("SELECT * FROM users;")
         rows_number = len(cur.fetchall())
@@ -102,7 +102,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         user_data = (rows_number + 1, message.from_user.first_name, message.from_user.id)
         cur.execute("""INSERT INTO users VALUES(?, ?, ?);""", user_data)
         db.commit()
-        print(f"Added user {user_data[1]} with id={user_data[0]}")
+        print(f"Added user {user_data[1]} with userid={user_data[0]}")
     await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
                          f'Какой вопрос Вас интересует?',
                          reply_markup=keyboards.start_kb)
