@@ -94,7 +94,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
     cur.execute("""CREATE TABLE IF NOT EXISTS users( userid INT PRIMARY KEY, name TEXT, tg_user_id TEXT);""")
     db.commit()
-    cur.execute("SELECT * FROM users where tg_user_id = ?;", message.from_user.id)
+    cur.execute("SELECT * FROM users where tg_user_id = ?;", (message.from_user.id,))
     if len(cur.fetchall()) == 0:
         cur.execute("SELECT * FROM users;")
         rows_number = len(cur.fetchall())
