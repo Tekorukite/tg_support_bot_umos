@@ -1,20 +1,21 @@
 import logging
-from aiogram import Bot, Dispatcher, executor, types
-import keyboards
-from settings import TELEGRAM_TOKEN, HEROKU_APP_NAME, PORT
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.dispatcher.webhook import SendMessage
-from aiogram.utils.executor import start_webhook
+from contextlib import suppress
+import sqlite3
+from sqlite3 import Error
+import requests
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-import texts
-from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, \
+from aiogram.types import InlineKeyboardMarkup, \
     InlineKeyboardButton
 from aiogram.utils.exceptions import MessageNotModified
-from contextlib import suppress
-from aiogram.dispatcher.filters import Text
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-import requests
+from aiogram.utils.executor import start_webhook
+import keyboards
+import texts
+from settings import TELEGRAM_TOKEN, HEROKU_APP_NAME, PORT, TELEGRAM_SUPPORT_CHAT_ID
+from time import sleep
 
 storage = MemoryStorage()
 
@@ -85,14 +86,35 @@ class Support(StatesGroup):
 bot = Bot(token=TELEGRAM_TOKEN, parse_mode='markdownv2')
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.DEBUG)
-
+db = sqlite3.connect('umos_bot.db')
+cur = db.cursor()
 
 @dp.message_handler(commands="start")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
+    cur.execute("""CREATE TABLE IF NOT EXISTS users( userid INT PRIMARY KEY, name TEXT, tg_user_id INT;""")
+    db.commit()
+    cur.execute("SELECT * FROM users where id = ?", message.from_user.id)
+    if len(cur.fetchall()) == 0:
+        cur.execute("SELECT * FROM users;")
+        rows_number = len(cur.fetchall())
+
+        user_data = (rows_number + 1, message.from_user.first_name, message.from_user.id)
+        cur.execute("""INSERT INTO users VALUES(?, ?, ?)""", user_data)
+        db.commit()
+        print(f"Added user {user_data[1]} with id={user_data[0]}")
     await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
                          f'Какой вопрос Вас интересует?',
                          reply_markup=keyboards.start_kb)
+
+
+@dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
+async def cmd_send_all(message: types.message):
+    cur.execute("SELECT tg_user_id FROM users")
+    users = cur.fetchall()
+    for user in users:
+        await bot.send_message(chat_id=user, text=message.text[7:])
+        sleep(0.3)
 
 
 @dp.message_handler(commands="payment")
