@@ -113,7 +113,7 @@ async def cmd_send_all(message: types.message):
     cur.execute("SELECT tg_user_id FROM users;")
     users = cur.fetchall()
     for user in users:
-        await bot.send_message(chat_id=user[0], text=message.text[7:])
+        await bot.send_message(chat_id=user[0], text=message.text[7:], parse_mode=None)
         sleep(0.3)
 
 
