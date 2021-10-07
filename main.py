@@ -94,13 +94,13 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
     cur.execute("""CREATE TABLE IF NOT EXISTS users( userid INT PRIMARY KEY, name TEXT, tg_user_id INT);""")
     db.commit()
-    cur.execute("SELECT * FROM users where id = ?", message.from_user.id)
+    cur.execute("SELECT * FROM users where id = ?;", message.from_user.id)
     if len(cur.fetchall()) == 0:
         cur.execute("SELECT * FROM users;")
         rows_number = len(cur.fetchall())
 
         user_data = (rows_number + 1, message.from_user.first_name, message.from_user.id)
-        cur.execute("""INSERT INTO users VALUES(?, ?, ?)""", user_data)
+        cur.execute("""INSERT INTO users VALUES(?, ?, ?);""", user_data)
         db.commit()
         print(f"Added user {user_data[1]} with id={user_data[0]}")
     await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
@@ -110,7 +110,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
 async def cmd_send_all(message: types.message):
-    cur.execute("SELECT tg_user_id FROM users")
+    cur.execute("SELECT tg_user_id FROM users;")
     users = cur.fetchall()
     for user in users:
         await bot.send_message(chat_id=user, text=message.text[7:])
