@@ -1,20 +1,21 @@
 import logging
-from aiogram import Bot, Dispatcher, executor, types
-import keyboards
-from settings import TELEGRAM_TOKEN, HEROKU_APP_NAME, PORT
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.dispatcher.webhook import SendMessage
-from aiogram.utils.executor import start_webhook
+from contextlib import suppress
+import psycopg2
+import requests
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
-import texts
-from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, \
+from aiogram.types import InlineKeyboardMarkup, \
     InlineKeyboardButton
 from aiogram.utils.exceptions import MessageNotModified
-from contextlib import suppress
-from aiogram.dispatcher.filters import Text
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-import requests
+from aiogram.utils.executor import start_webhook
+import keyboards
+import texts
+from settings import TELEGRAM_TOKEN, HEROKU_APP_NAME, PORT, TELEGRAM_SUPPORT_CHAT_ID
+from aiogram.utils import exceptions
+import asyncio
 
 storage = MemoryStorage()
 
@@ -85,14 +86,68 @@ class Support(StatesGroup):
 bot = Bot(token=TELEGRAM_TOKEN, parse_mode='markdownv2')
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger('broadcast')
+db = psycopg2.connect(
+    user="umosbot",
+    password="UmosSupportBotMSU",
+    host="3.16.161.63",
+    database="umosdb",
+    port=5432
+)
+cur = db.cursor()
 
 
 @dp.message_handler(commands="start")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
+    cur.execute("SELECT * FROM subscribers WHERE tg_user_id = %s;", [message.from_user.id])
+    if len(cur.fetchall()) == 0:
+        user_data = (message.from_user.first_name, message.from_user.id)
+        cur.execute("""INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(%s, %s, CURRENT_DATE);""", user_data)
+        cur.execute("COMMIT;")
+        print(f"Added user {user_data[0]} with userid={user_data[1]}")
     await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
                          f'Какой вопрос Вас интересует?',
                          reply_markup=keyboards.start_kb)
+
+
+async def send_message_custom(user_id: int, text: str, disable_notification: bool = False) -> bool:
+    try:
+        await bot.send_message(user_id, text, disable_notification=disable_notification)
+    except exceptions.BotBlocked:
+        log.error(f"Target [ID:{user_id}]: blocked by user")
+    except exceptions.ChatNotFound:
+        log.error(f"Target [ID:{user_id}]: invalid user ID")
+    except exceptions.RetryAfter as e:
+        log.error(f"Target [ID:{user_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds.")
+        await asyncio.sleep(e.timeout)
+        return await send_message_custom(user_id, text)
+    except exceptions.UserDeactivated:
+        log.error(f"Target [ID:{user_id}]: user is deactivated")
+    except exceptions.TelegramAPIError:
+        log.exception(f"Target [ID:{user_id}]: failed")
+    else:
+        return True
+    return False
+
+
+async def broadcaster(users, text: str) -> int:
+    count = 0
+    try:
+        for user in users:
+            if await send_message_custom(user[0], text):
+                count += 1
+                await asyncio.sleep(.04)
+    finally:
+        log.info(f"{count} messages successful sent.")
+    return count
+
+
+@dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
+async def cmd_send_all(message: types.message):
+    cur.execute("SELECT tg_user_id FROM subscribers;")
+    users = cur.fetchall()
+    await broadcaster(users, message.text[8:])
 
 
 @dp.message_handler(commands="payment")
@@ -376,6 +431,7 @@ async def on_startup(dp):
 async def on_shutdown(dp):
     logging.warning('Shutting down..')
     await bot.delete_webhook()
+    db.close()
     logging.warning('Bye!')
 
 
