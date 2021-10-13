@@ -109,7 +109,7 @@ cur.execute("""CREATE TABLE IF NOT EXISTS subscribers
 @dp.message_handler(commands="start")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
-    cur.execute("SELECT * FROM subscribers where tg_user_id = ?;", message.from_user.id)
+    cur.execute(f"SELECT * FROM subscribers where tg_user_id = {message.from_user.id};")
     if len(cur.fetchall()) == 0:
         user_data = (message.from_user.first_name, message.from_user.id)
         cur.execute("""INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(?, ?, CURRENT_DATE);""", user_data)
