@@ -137,7 +137,7 @@ async def broadcaster(users, text: str) -> int:
     count = 0
     try:
         for user in users:
-            if await send_message_custom(user, text):
+            if await send_message_custom(user[0], text):
                 count += 1
                 await asyncio.sleep(.04)
     finally:
