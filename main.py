@@ -1,6 +1,6 @@
 import logging
 from contextlib import suppress
-import sqlite3
+import psycopg2
 from sqlite3 import Error
 import requests
 from aiogram import Bot, Dispatcher, types
@@ -86,23 +86,31 @@ class Support(StatesGroup):
 bot = Bot(token=TELEGRAM_TOKEN, parse_mode='markdownv2')
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.DEBUG)
-db = sqlite3.connect('umos_bot.db')
+db = psycopg2.connect(
+    user="umosbot",
+    password="UmosSupportBotMSU",
+    host="3.16.161.63",
+    database="umosdb",
+    port=5432
+)
 cur = db.cursor()
+cur.execute("""CREATE TABLE IF NOT EXISTS subscribers
+                (
+                    user_id SERIAL PRIMARY KEY,
+                    name TEXT,
+                    tg_user_id TEXT,
+                    reg_date DATE
+                );""")
+
 
 @dp.message_handler(commands="start")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
-    cur.execute("""CREATE TABLE IF NOT EXISTS users( userid INT PRIMARY KEY, name TEXT, tg_user_id TEXT);""")
-    db.commit()
-    cur.execute("SELECT * FROM users where tg_user_id = ?;", (message.from_user.id,))
+    cur.execute("SELECT * FROM subscribers where tg_user_id = ?;", (message.from_user.id,))
     if len(cur.fetchall()) == 0:
-        cur.execute("SELECT * FROM users;")
-        rows_number = len(cur.fetchall())
-
-        user_data = (rows_number + 1, message.from_user.first_name, message.from_user.id)
-        cur.execute("""INSERT INTO users VALUES(?, ?, ?);""", user_data)
-        db.commit()
-        print(f"Added user {user_data[1]} with userid={user_data[0]}")
+        user_data = (message.from_user.first_name, message.from_user.id)
+        cur.execute("""INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(?, ?, CURRENT_DATE);""", user_data)
+        print(f"Added user {user_data[0]} with userid={user_data[1]}")
     await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
                          f'Какой вопрос Вас интересует?',
                          reply_markup=keyboards.start_kb)
@@ -110,7 +118,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
 async def cmd_send_all(message: types.message):
-    cur.execute("SELECT tg_user_id FROM users;")
+    cur.execute("SELECT tg_user_id FROM subscribers;")
     users = cur.fetchall()
     for user in users:
         await bot.send_message(chat_id=user[0], text=message.text[7:], parse_mode='')
