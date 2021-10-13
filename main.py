@@ -107,6 +107,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     if len(cur.fetchall()) == 0:
         user_data = (message.from_user.first_name, message.from_user.id)
         cur.execute("""INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(%s, %s, CURRENT_DATE);""", user_data)
+        cur.execute("COMMIT;")
         print(f"Added user {user_data[0]} with userid={user_data[1]}")
     await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
                          f'Какой вопрос Вас интересует?',
