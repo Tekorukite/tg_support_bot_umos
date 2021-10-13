@@ -1,7 +1,7 @@
 import logging
 from contextlib import suppress
 import psycopg2
-from sqlite3 import Error
+from psycopg2 import Error
 import requests
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
