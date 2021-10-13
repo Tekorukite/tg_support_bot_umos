@@ -103,10 +103,10 @@ cur = db.cursor()
 @dp.message_handler(commands="start")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
-    cur.execute("SELECT * FROM subscribers WHERE tg_user_id = ?;", [message.from_user.id])
+    cur.execute("SELECT * FROM subscribers WHERE tg_user_id = %s;", [message.from_user.id])
     if len(cur.fetchall()) == 0:
         user_data = (message.from_user.first_name, message.from_user.id)
-        cur.execute("""INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(?, ?, CURRENT_DATE);""", user_data)
+        cur.execute("""INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(%s, %s, CURRENT_DATE);""", user_data)
         print(f"Added user {user_data[0]} with userid={user_data[1]}")
     await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
                          f'Какой вопрос Вас интересует?',
