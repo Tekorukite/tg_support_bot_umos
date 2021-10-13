@@ -279,7 +279,7 @@ async def cmd_support_inline(call: types.CallbackQuery, state: FSMContext):
 @dp.message_handler(commands="support")
 @dp.message_handler(lambda message: message.text.lower() == 'заявка в техподдержку')
 async def cmd_support(message: types.Message, state: FSMContext):
-    cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id=%s);""", [message.from_user.id])
+    cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={int(message.from_user.id)});""")
     ticket = cur.fetchone()
     if len(cur.fetchall()) == 0:
         await message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
