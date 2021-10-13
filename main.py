@@ -399,15 +399,15 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
     cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id});""")
     if len(cur.fetchall()) == 0:
         cur.execute(f"""INSERT INTO tickets 
-                    (user_id, dorm, building, room, fullname, login, phone) 
-                    VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id}), %s, %s, %s, %s, %s, %s);""",
+                    (user_id, dorm, building, room, fullname, login, phone, request_date) 
+                    VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id}), %s, %s, %s, %s, %s, %s, CURRENT_DATE);""",
                     (user_data['chosen_dormitory'], user_data['chosen_building'], user_data['chosen_room'],
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
     else:
         cur.execute(f"""UPDATE tickets
-                    SET (user_id, dorm, building, room, fullname, login, phone) = 
-                    VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id}), %s, %s, %s, %s, %s, %s);""",
+                    SET (user_id, dorm, building, room, fullname, login, phone, request_date) = 
+                    VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id}), %s, %s, %s, %s, %s, %s, CURRENT_DATE);""",
                     (user_data['chosen_dormitory'], user_data['chosen_building'], user_data['chosen_room'],
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
