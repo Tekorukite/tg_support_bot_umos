@@ -278,9 +278,31 @@ async def cmd_support_inline(call: types.CallbackQuery, state: FSMContext):
 
 @dp.message_handler(commands="support")
 @dp.message_handler(lambda message: message.text.lower() == 'заявка в техподдержку')
-async def cmd_support(message: types.Message):
-    await message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
-    await Support.dormitory.set()
+async def cmd_support(message: types.Message, state: FSMContext):
+    cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id});""")
+    ticket = cur.fetch()
+    if len(cur.fetchall()) == 0:
+        await message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
+        await Support.dormitory.set()
+    else:
+        await state.update_data(chosen_dormitory=ticket[0])
+        await state.update_data(chosen_building=ticket[1])
+        await state.update_data(chosen_room=ticket[2])
+        await state.update_data(chosen_name=ticket[3])
+        await state.update_data(chosen_phone=ticket[5])
+        await state.update_data(chosen_login=ticket[4])
+        user_data = await state.get_data()
+        await message.answer(f"В прошлый раз Вы указали следующие данные:\n"
+                             f"Общежитие: {user_data['chosen_dormitory']}\n"
+                             f"Корпус: {user_data['chosen_building']}\n"
+                             f"Комната: {user_data['chosen_room']}\n"
+                             f"Имя: {user_data['chosen_name']}\n"
+                             f"Номер телефона: {user_data['chosen_phone']}\n"
+                             f"Логин: {user_data['chosen_login']}\n",
+                             reply_markup=InlineKeyboardMarkup(row_width=1).add(keyboards.inline_commit,
+                                                                                keyboards.inline_edit,
+                                                                                keyboards.inline_cancel), parse_mode=""
+                             )
 
 
 @dp.message_handler(state=Support.dormitory)
@@ -329,6 +351,11 @@ async def cmd_login(message: types.Message, state: FSMContext):
     await Support.next()
     await message.answer("Опишите проблему \(подробно\)\.")
 
+@dp.callback_query_handler(text='commit')
+async def cmd_continue_problem(call: types.CallbackQuery, state: FSMContext):
+    await Support.next()
+    await call.message.answer("Опишите проблему \(подробно\)\.")
+
 
 @dp.message_handler(state=Support.problem)
 async def cmd_problem(message: types.Message, state: FSMContext):
@@ -361,7 +388,7 @@ async def cmd_print(message: types.Message, state: FSMContext):
                                                                             keyboards.inline_cancel), parse_mode="")
 
 
-@dp.callback_query_handler(text='edit', state=Support.filled)
+@dp.callback_query_handler(text='edit')
 async def cmd_edit(call: types.CallbackQuery, state: FSMContext):
     await cmd_support(call.message)
 
@@ -369,6 +396,21 @@ async def cmd_edit(call: types.CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(text='send', state=Support.filled)
 async def cmd_send(call: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
+    cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id});""")
+    if len(cur.fetchall()) == 0:
+        cur.execute(f"""INSERT INTO tickets 
+                    (user_id, dorm, building, room, fullname, login, phone) 
+                    VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id}), %s, %s, %s, %s, %s, %s);""",
+                    (user_data['chosen_dormitory'], user_data['chosen_building'], user_data['chosen_room'],
+                     user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
+                    )
+    else:
+        cur.execute(f"""UPDATE tickets
+                    SET (user_id, dorm, building, room, fullname, login, phone) = 
+                    VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id}), %s, %s, %s, %s, %s, %s);""",
+                    (user_data['chosen_dormitory'], user_data['chosen_building'], user_data['chosen_room'],
+                     user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
+                    )
     if user_data['chosen_dormitory'] in ['ДСВ', 'ДСК', 'ДСШ', 'ДСЯ']:
         url = DSVKSY_GFORM['url']
         sending_data = {
