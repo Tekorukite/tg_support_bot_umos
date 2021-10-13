@@ -103,7 +103,6 @@ cur = db.cursor()
 @dp.message_handler(commands="start")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
-    cur.execute("""CREATE TABLE IF NOT EXISTS subscribers (user_id SERIAL PRIMARY KEY, name TEXT, tg_user_id TEXT, reg_date DATE);""")
     cur.execute("SELECT * FROM subscribers WHERE tg_user_id = ?;", [message.from_user.id])
     if len(cur.fetchall()) == 0:
         user_data = (message.from_user.first_name, message.from_user.id)
