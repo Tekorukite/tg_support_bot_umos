@@ -16,6 +16,8 @@ import keyboards
 import texts
 from settings import TELEGRAM_TOKEN, HEROKU_APP_NAME, PORT, TELEGRAM_SUPPORT_CHAT_ID
 from time import sleep
+from aiogram.utils import exceptions
+import asyncio
 
 storage = MemoryStorage()
 
@@ -86,6 +88,7 @@ class Support(StatesGroup):
 bot = Bot(token=TELEGRAM_TOKEN, parse_mode='markdownv2')
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger('broadcast')
 db = psycopg2.connect(
     user="umosbot",
     password="UmosSupportBotMSU",
@@ -98,7 +101,7 @@ cur.execute("""CREATE TABLE IF NOT EXISTS subscribers
                 (
                     user_id SERIAL PRIMARY KEY,
                     name TEXT,
-                    tg_user_id TEXT,
+                    tg_user_id INTEGER,
                     reg_date DATE
                 );""")
 
@@ -106,7 +109,7 @@ cur.execute("""CREATE TABLE IF NOT EXISTS subscribers
 @dp.message_handler(commands="start")
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
-    cur.execute("SELECT * FROM subscribers where tg_user_id = ?;", (message.from_user.id,))
+    cur.execute("SELECT * FROM subscribers where tg_user_id = ?;", message.from_user.id)
     if len(cur.fetchall()) == 0:
         user_data = (message.from_user.first_name, message.from_user.id)
         cur.execute("""INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(?, ?, CURRENT_DATE);""", user_data)
@@ -116,13 +119,43 @@ async def cmd_start(message: types.Message, state: FSMContext):
                          reply_markup=keyboards.start_kb)
 
 
+async def send_message_custom(user_id: int, text: str, disable_notification: bool = False) -> bool:
+    try:
+        await bot.send_message(user_id, text, disable_notification=disable_notification)
+    except exceptions.BotBlocked:
+        log.error(f"Target [ID:{user_id}]: blocked by user")
+    except exceptions.ChatNotFound:
+        log.error(f"Target [ID:{user_id}]: invalid user ID")
+    except exceptions.RetryAfter as e:
+        log.error(f"Target [ID:{user_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds.")
+        await asyncio.sleep(e.timeout)
+        return await send_message_custom(user_id, text)
+    except exceptions.UserDeactivated:
+        log.error(f"Target [ID:{user_id}]: user is deactivated")
+    except exceptions.TelegramAPIError:
+        log.exception(f"Target [ID:{user_id}]: failed")
+    else:
+        return True
+    return False
+
+
+async def broadcaster(users, text: str) -> int:
+    count = 0
+    try:
+        for user in users:
+            if await send_message_custom(user, text):
+                count += 1
+                await asyncio.sleep(.04)
+    finally:
+        log.info(f"{count} messages successful sent.")
+    return count
+
+
 @dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
 async def cmd_send_all(message: types.message):
     cur.execute("SELECT tg_user_id FROM subscribers;")
     users = cur.fetchall()
-    for user in users:
-        await bot.send_message(chat_id=user[0], text=message.text[7:], parse_mode='')
-        sleep(0.3)
+    await broadcaster(users, message.text[8:])
 
 
 @dp.message_handler(commands="payment")
