@@ -282,16 +282,16 @@ async def cmd_support(message: types.Message, state: FSMContext):
     cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={int(message.from_user.id)});""")
     ticket = cur.fetchone()
     print(ticket)
-    if len(cur.fetchall()) == 0:
+    if len(ticket) == 0:
         await message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
         await Support.dormitory.set()
     else:
-        await state.update_data(chosen_dormitory=ticket[0])
-        await state.update_data(chosen_building=ticket[1])
-        await state.update_data(chosen_room=ticket[2])
-        await state.update_data(chosen_name=ticket[3])
-        await state.update_data(chosen_phone=ticket[5])
-        await state.update_data(chosen_login=ticket[4])
+        await state.update_data(chosen_dormitory=ticket[2])
+        await state.update_data(chosen_building=ticket[3])
+        await state.update_data(chosen_room=ticket[4])
+        await state.update_data(chosen_name=ticket[5])
+        await state.update_data(chosen_phone=ticket[7])
+        await state.update_data(chosen_login=ticket[6])
         user_data = await state.get_data()
         await message.answer(f"В прошлый раз Вы указали следующие данные:\n"
                              f"Общежитие: {user_data['chosen_dormitory']}\n"
