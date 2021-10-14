@@ -409,6 +409,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                     (user_data['chosen_dormitory'], user_data['chosen_building'], user_data['chosen_room'],
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
+        db.commit()
     else:
         print(f"""UPDATE tickets
                     SET (user_id, dorm, building, room, fullname, login, phone, request_date) = 
@@ -421,6 +422,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                     (user_data['chosen_dormitory'], user_data['chosen_building'], user_data['chosen_room'],
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
+        db.commit()
     if user_data['chosen_dormitory'] in ['ДСВ', 'ДСК', 'ДСШ', 'ДСЯ']:
         url = DSVKSY_GFORM['url']
         sending_data = {
