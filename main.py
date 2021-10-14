@@ -149,7 +149,7 @@ async def cmd_send_all(message: types.message):
     cur.execute("SELECT tg_user_id FROM subscribers;")
     users = cur.fetchall()
     send, total = await broadcaster(users, message.text[8:])
-    message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
+    await message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
 
 
 async def cmd_delete_message(chat_id: int, message_id: int) -> bool:
@@ -159,6 +159,10 @@ async def cmd_delete_message(chat_id: int, message_id: int) -> bool:
         log.exception(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: not found.")
     except MessageCantBeDeleted:
         log.exception(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: cant be deleted.")
+    except exceptions.RetryAfter as e:
+        log.error(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds.")
+        await asyncio.sleep(e.timeout)
+        return await cmd_delete_all(chat_id, message_id)
     else:
         return True
     return False
@@ -179,7 +183,7 @@ async def cmd_delete_all(message: types.message):
                     await asyncio.sleep(.04)
         finally:
             log.info(f"BROADCAST: {count} out of {len(messages)} messages successfully deleted.")
-            message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.", parse_mode='Markdown')
+            await message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.", parse_mode='Markdown')
             cur.execute("""TRUNCATE broadcast;""")
 
 
