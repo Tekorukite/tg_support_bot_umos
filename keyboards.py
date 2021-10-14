@@ -1,7 +1,8 @@
-from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, \
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, \
     InlineKeyboardButton
 
 inline_cancel = InlineKeyboardButton('В начало', callback_data='cancel')
+inline_commit = InlineKeyboardButton('Продолжить', callback_data='commit')
 inline_back = InlineKeyboardButton('Назад', callback_data='back')
 inline_credit_card = InlineKeyboardButton('Картой онлайн', callback_data='credit_card')
 inline_sb_online = InlineKeyboardButton('Сбер Онлайн', callback_data='sb_online')
