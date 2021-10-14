@@ -354,7 +354,7 @@ async def cmd_login(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(text='commit')
 async def cmd_continue_problem(call: types.CallbackQuery, state: FSMContext):
-    await Support.next()
+    await Support.problem.set()
     await call.message.answer("Опишите проблему \(подробно\)\.")
 
 
