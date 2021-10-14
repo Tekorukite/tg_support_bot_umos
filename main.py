@@ -282,7 +282,7 @@ async def cmd_support(message: types.Message, state: FSMContext):
     cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id});""")
     ticket = cur.fetchone()
     print(ticket)
-    if len(ticket) == 0:
+    if len(ticket) == 0 or ticket is None:
         await message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
         await Support.dormitory.set()
     else:
@@ -389,7 +389,7 @@ async def cmd_print(message: types.Message, state: FSMContext):
                                                                             keyboards.inline_cancel), parse_mode="")
 
 
-@dp.callback_query_handler(text='edit')
+@dp.callback_query_handler(text='edit', state='*')
 async def cmd_edit(call: types.CallbackQuery, state: FSMContext):
     await cmd_support(call.message, state)
 
