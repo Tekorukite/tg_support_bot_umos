@@ -279,7 +279,8 @@ async def cmd_support_inline(call: types.CallbackQuery, state: FSMContext):
 @dp.message_handler(commands="support")
 @dp.message_handler(lambda message: message.text.lower() == 'заявка в техподдержку')
 async def cmd_support(message: types.Message, state: FSMContext):
-    cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id});""")
+    cur.execute(
+        f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id});""")
     ticket = cur.fetchone()
     print(ticket)
     if ticket is None or len(ticket) == 0:
@@ -352,6 +353,7 @@ async def cmd_login(message: types.Message, state: FSMContext):
     await Support.next()
     await message.answer("Опишите проблему \(подробно\)\.")
 
+
 @dp.callback_query_handler(text='commit')
 async def cmd_continue_problem(call: types.CallbackQuery, state: FSMContext):
     await Support.problem.set()
@@ -397,7 +399,8 @@ async def cmd_edit(call: types.CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(text='send', state=Support.filled)
 async def cmd_send(call: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
-    cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id});""")
+    cur.execute(
+        f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id});""")
     if len(cur.fetchall()) == 0:
         cur.execute(f"""INSERT INTO tickets 
                     (user_id, dorm, building, room, fullname, login, phone, request_date) 
@@ -406,6 +409,11 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
     else:
+        print(f"""UPDATE tickets
+                    SET (user_id, dorm, building, room, fullname, login, phone, request_date) = 
+                    ((SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id}), %s, '%s', %s, %s, '%s', %s, CURRENT_DATE);""",
+              (user_data['chosen_dormitory'], user_data['chosen_building'], user_data['chosen_room'],
+               user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone']))
         cur.execute(f"""UPDATE tickets
                     SET (user_id, dorm, building, room, fullname, login, phone, request_date) = 
                     ((SELECT user_id FROM subscribers WHERE tg_user_id={call.message.from_user.id}), %s, %s, %s, %s, %s, %s, CURRENT_DATE);""",
