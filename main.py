@@ -9,7 +9,7 @@ from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, \
     InlineKeyboardButton
-from aiogram.utils.exceptions import MessageNotModified
+from aiogram.utils.exceptions import MessageNotModified, MessageCantBeDeleted, MessageToDeleteNotFound
 from aiogram.utils.executor import start_webhook
 import keyboards
 import texts
@@ -113,7 +113,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 async def send_message_custom(user_id: int, text: str, disable_notification: bool = False) -> bool:
     try:
-        await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
+        msg = await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
+        cur.execute(f"""INSERT INTO broadcast (chat_id, message_id) VALUES({msg.chat.id},{msg.message_id});""")
     except exceptions.BotBlocked:
         log.error(f"Target [ID:{user_id}]: blocked by user")
     except exceptions.ChatNotFound:
@@ -131,7 +132,7 @@ async def send_message_custom(user_id: int, text: str, disable_notification: boo
     return False
 
 
-async def broadcaster(users, text: str) -> int:
+async def broadcaster(users, text: str) -> (int, int):
     count = 0
     try:
         for user in users:
@@ -139,15 +140,47 @@ async def broadcaster(users, text: str) -> int:
                 count += 1
                 await asyncio.sleep(.04)
     finally:
-        log.info(f"{count} out of {len(users)} messages successful sent.")
-    return count
+        log.info(f"BROADCAST: {count} out of {len(users)} messages successful sent.")
+    return count, len(users)
 
 
 @dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
 async def cmd_send_all(message: types.message):
     cur.execute("SELECT tg_user_id FROM subscribers;")
     users = cur.fetchall()
-    await broadcaster(users, message.text[8:])
+    send, total = await broadcaster(users, message.text[8:])
+    message.reply(f"Сообщение доставлено {send} из {total} пользователей.")
+
+
+async def cmd_delete_message(chat_id: int, message_id: int) -> bool:
+    try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except MessageToDeleteNotFound:
+        log.exception(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: not found.")
+    except MessageCantBeDeleted:
+        log.exception(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: cant be deleted.")
+    else:
+        return True
+    return False
+
+
+@dp.message_handler(lambda message: message.text == 'DELETE BROADCAST', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
+async def cmd_delete_all(message: types.message):
+    cur.execute("""SELECT * FROM broadcast;""")
+    count = 0
+    messages = cur.fetchall()
+    if messages is None or len(messages) == 0:
+        await message.reply("Нечего удалять. Ты точно отправлял броадкасты?")
+    else:
+        try:
+            for row in messages:
+                if await cmd_delete_message(row[1], row[2]):
+                    count += 1
+                    await asyncio.sleep(.04)
+        finally:
+            log.info(f"BROADCAST: {count} out of {len(messages)} messages successfully deleted.")
+            message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.")
+            cur.execute("""TRUNCATE broadcast;""")
 
 
 @dp.message_handler(commands="payment")
