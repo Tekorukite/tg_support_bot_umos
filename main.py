@@ -113,7 +113,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 async def send_message_custom(user_id: int, text: str, disable_notification: bool = False) -> bool:
     try:
-        await bot.send_message(user_id, text, disable_notification=disable_notification)
+        await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
     except exceptions.BotBlocked:
         log.error(f"Target [ID:{user_id}]: blocked by user")
     except exceptions.ChatNotFound:
@@ -139,7 +139,7 @@ async def broadcaster(users, text: str) -> int:
                 count += 1
                 await asyncio.sleep(.04)
     finally:
-        log.info(f"{count} messages successful sent.")
+        log.info(f"{count} out of {len(users)} messages successful sent.")
     return count
 
 
