@@ -85,7 +85,7 @@ class Support(StatesGroup):
 
 bot = Bot(token=TELEGRAM_TOKEN, parse_mode='markdownv2')
 dp = Dispatcher(bot, storage=storage)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('broadcast')
 db = psycopg2.connect(
     user="umosbot",
