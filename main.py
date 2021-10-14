@@ -391,7 +391,7 @@ async def cmd_print(message: types.Message, state: FSMContext):
 
 @dp.callback_query_handler(text='edit')
 async def cmd_edit(call: types.CallbackQuery, state: FSMContext):
-    await cmd_support(call.message)
+    await cmd_support(call.message, state)
 
 
 @dp.callback_query_handler(text='send', state=Support.filled)
