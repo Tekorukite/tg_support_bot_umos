@@ -281,6 +281,7 @@ async def cmd_support_inline(call: types.CallbackQuery, state: FSMContext):
 async def cmd_support(message: types.Message, state: FSMContext):
     cur.execute(f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={int(message.from_user.id)});""")
     ticket = cur.fetchone()
+    print(ticket)
     if len(cur.fetchall()) == 0:
         await message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
         await Support.dormitory.set()
