@@ -149,7 +149,7 @@ async def cmd_send_all(message: types.message):
     cur.execute("SELECT tg_user_id FROM subscribers;")
     users = cur.fetchall()
     send, total = await broadcaster(users, message.text[8:])
-    message.reply(f"Сообщение доставлено {send} из {total} пользователей.")
+    message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
 
 
 async def cmd_delete_message(chat_id: int, message_id: int) -> bool:
@@ -170,7 +170,7 @@ async def cmd_delete_all(message: types.message):
     count = 0
     messages = cur.fetchall()
     if messages is None or len(messages) == 0:
-        await message.reply("Нечего удалять. Ты точно отправлял броадкасты?")
+        await message.reply("Нечего удалять. Ты точно отправлял броадкасты?", parse_mode='Markdown')
     else:
         try:
             for row in messages:
@@ -179,7 +179,7 @@ async def cmd_delete_all(message: types.message):
                     await asyncio.sleep(.04)
         finally:
             log.info(f"BROADCAST: {count} out of {len(messages)} messages successfully deleted.")
-            message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.")
+            message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.", parse_mode='Markdown')
             cur.execute("""TRUNCATE broadcast;""")
 
 
