@@ -114,6 +114,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 async def send_message_custom(user_id: int, text: str, disable_notification: bool = False) -> bool:
     try:
         msg = await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
+        await bot.pin_chat_message(chat_id=msg.chat.id, message_id=msg.message_id)
         cur.execute(f"""INSERT INTO broadcast (chat_id, message_id) VALUES({msg.chat.id},{msg.message_id});""")
     except exceptions.BotBlocked:
         log.error(f"Target [ID:{user_id}]: blocked by user")
