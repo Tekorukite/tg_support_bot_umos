@@ -115,7 +115,6 @@ async def send_message_custom(user_id: int, text: str, disable_notification: boo
     try:
         msg = await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
         await bot.pin_chat_message(chat_id=msg.chat.id, message_id=msg.message_id)
-        cur.execute(f"""INSERT INTO broadcast (chat_id, message_id) VALUES({msg.chat.id},{msg.message_id});""")
     except exceptions.BotBlocked:
         log.error(f"Target [ID:{user_id}]: blocked by user")
     except exceptions.ChatNotFound:
@@ -129,6 +128,7 @@ async def send_message_custom(user_id: int, text: str, disable_notification: boo
     except exceptions.TelegramAPIError:
         log.exception(f"Target [ID:{user_id}]: failed")
     else:
+        cur.execute(f"""INSERT INTO broadcast (chat_id, message_id) VALUES({msg.chat.id},{msg.message_id});""")
         return True
     return False
 
@@ -141,7 +141,7 @@ async def broadcaster(users, text: str) -> (int, int):
                 count += 1
                 await asyncio.sleep(.04)
     finally:
-        log.info(f"BROADCAST: {count} out of {len(users)} messages successful sent.")
+        log.info(f" {count} out of {len(users)} messages successful sent.")
     return count, len(users)
 
 
@@ -183,9 +183,10 @@ async def cmd_delete_all(message: types.message):
                     count += 1
                     await asyncio.sleep(.04)
         finally:
-            log.info(f"BROADCAST: {count} out of {len(messages)} messages successfully deleted.")
+            log.info(f" {count} out of {len(messages)} messages successfully deleted.")
             await message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.", parse_mode='Markdown')
-            cur.execute("""TRUNCATE broadcast;""")
+            cur.execute("""DELETE FROM broadcast;""")
+            db.commit()
 
 
 @dp.message_handler(commands="payment")
