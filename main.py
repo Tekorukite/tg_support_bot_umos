@@ -452,8 +452,8 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     cur.execute(
         f"""SELECT * FROM tickets 
-        WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.from_user.id})
-        ORDER BY request_date DESC
+        WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.from_user.id}) AND request_date=CURRENT_DATE
+        ORDER BY ticket_id DESC
         LIMIT 5;""")
     row = cur.fetchall()
     if row is None or len(row) < 5:
@@ -519,8 +519,10 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
             await cmd_print(call.message, state)
     else:
         await call.message.answer("К сожалению, Вы отправили уже 5 заявок в техподдержку сегодня. "
-                                  "Вы можете написать нам на почту: msu.umos@gmail.com\n "
-                                  "или позвонить по телефону: +7 (499) 553-02-17", parse_mode='Markdown')
+                                  "Вы можете написать нам на почту: msu.umos@gmail.com\n"
+                                  "или позвонить по телефону: +7 (499) 553-02-17",
+                                  parse_mode='Markdown',
+                                  reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 
