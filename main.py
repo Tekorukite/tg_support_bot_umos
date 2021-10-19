@@ -529,10 +529,10 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
 
 
 @dp.message_handler(state='*')
-async def cmd_unknown(message: types.Message):
+async def cmd_unknown(message: types.Message, state: FSMContext):
     await message.answer("Я не смог распознать данную команду. Попробуйте воспользоваться клавиатурой ниже.",
                          parse_mode='Markdown')
-    await cmd_cancel_button(message)
+    await cmd_cancel_button(message, state)
 
 
 async def on_startup(dp):
