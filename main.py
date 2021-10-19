@@ -328,7 +328,10 @@ async def cmd_support_inline(call: types.CallbackQuery, state: FSMContext):
 async def cmd_support(message: types.Message, state: FSMContext):
     await state.finish()
     cur.execute(
-        f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id});""")
+        f"""SELECT * FROM tickets 
+        WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id})
+        ORDER BY request_date DESC
+        LIMIT 1;""")
     ticket = cur.fetchone()
     print(ticket)
     if ticket is None or len(ticket) == 0:
