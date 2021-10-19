@@ -330,7 +330,7 @@ async def cmd_support(message: types.Message, state: FSMContext):
     cur.execute(
         f"""SELECT * FROM tickets 
         WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id})
-        ORDER BY request_date DESC
+        ORDER BY ticket_id DESC
         LIMIT 1;""")
     ticket = cur.fetchone()
     print(ticket)
