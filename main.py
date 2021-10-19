@@ -110,6 +110,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
                          f'Какой вопрос Вас интересует?',
                          reply_markup=keyboards.start_kb)
 
+
 @dp.message_handler(lambda message: message.text.lower() == 'отмена', state='*')
 async def cmd_cancel_button(message: types.Message, state: FSMContext):
     await state.finish()
@@ -166,7 +167,8 @@ async def cmd_delete_message(chat_id: int, message_id: int) -> bool:
     except MessageCantBeDeleted:
         log.exception(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: cant be deleted.")
     except exceptions.RetryAfter as e:
-        log.error(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds.")
+        log.error(
+            f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds.")
         await asyncio.sleep(e.timeout)
         return await cmd_delete_all(chat_id, message_id)
     else:
@@ -192,8 +194,6 @@ async def cmd_delete_all(message: types.message):
             await message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.", parse_mode='Markdown')
             cur.execute("""DELETE FROM broadcast;""")
             db.commit()
-
-
 
 
 @dp.message_handler(commands="payment", state='*')
@@ -237,9 +237,6 @@ async def cmd_vtb_atm(call: types.CallbackQuery):
 async def cmd_back_payment(call: types.CallbackQuery):
     await call.message.edit_text(f"Каким способом оплаты Вы желаете воспользоваться?\n",
                                  reply_markup=keyboards.inline_kb_payment)
-
-
-
 
 
 @dp.callback_query_handler(text='cancel', state="*")
@@ -367,7 +364,8 @@ async def cmd_building(message: types.Message, state: FSMContext):
     await state.update_data(chosen_dormitory=message.text)
 
     await Support.next()
-    await message.answer('Укажите корпус\. Если нет, поставьте "\-"', reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
+    await message.answer('Укажите корпус\. Если нет, поставьте "\-"',
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.building)
@@ -381,7 +379,8 @@ async def cmd_building(message: types.Message, state: FSMContext):
 async def cmd_room(message: types.Message, state: FSMContext):
     await state.update_data(chosen_room=message.text)
     await Support.next()
-    await message.answer("Укажите, как к Вам обращаться\.", reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
+    await message.answer("Укажите, как к Вам обращаться\.",
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.name)
@@ -395,27 +394,31 @@ async def cmd_name(message: types.Message, state: FSMContext):
 async def cmd_phone(message: types.Message, state: FSMContext):
     await state.update_data(chosen_phone=message.text)
     await Support.next()
-    await message.answer("Укажите свой логин или лицевой счет\.", reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
+    await message.answer("Укажите свой логин или лицевой счет\.",
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.login)
 async def cmd_login(message: types.Message, state: FSMContext):
     await state.update_data(chosen_login=message.text)
     await Support.next()
-    await message.answer("Опишите проблему \(подробно\)\.", reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
+    await message.answer("Опишите проблему \(подробно\)\.",
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.callback_query_handler(text='commit', state='*')
 async def cmd_continue_problem(call: types.CallbackQuery, state: FSMContext):
     await Support.problem.set()
-    await call.message.answer("Опишите проблему \(подробно\)\.", reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
+    await call.message.answer("Опишите проблему \(подробно\)\.",
+                              reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.problem)
 async def cmd_problem(message: types.Message, state: FSMContext):
     await state.update_data(chosen_problem=message.text)
     await Support.next()
-    await message.answer("В какое время можно перезвонить \(Например: с 15\.00 до 23\.00 или 01\.01\.18 днем\)\.", reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
+    await message.answer("В какое время можно перезвонить \(Например: с 15\.00 до 23\.00 или 01\.01\.18 днем\)\.",
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.call_time)
@@ -525,10 +528,10 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                                   reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
-
 @dp.message_handler(state='*')
 async def cmd_unknown(message: types.Message):
-    await message.answer("Я не смог распознать данную команду. Попробуйте воспользоваться клавиатурой ниже.")
+    await message.answer("Я не смог распознать данную команду. Попробуйте воспользоваться клавиатурой ниже.",
+                         parse_mode='Markdown')
     await cmd_cancel_button(message)
 
 
