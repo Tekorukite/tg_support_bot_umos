@@ -367,7 +367,7 @@ async def cmd_building(message: types.Message, state: FSMContext):
     await state.update_data(chosen_dormitory=message.text)
 
     await Support.next()
-    await message.answer('Укажите корпус\. Если нет, поставьте "\-"')
+    await message.answer('Укажите корпус\. Если нет, поставьте "\-"', reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.building)
@@ -525,6 +525,11 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                                   reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
+
+@dp.message_handler(state='*')
+async def cmd_unknown(message: types.Message):
+    await message.answer("Я не смог распознать данную команду. Попробуйте воспользоваться клавиатурой ниже.")
+    await cmd_cancel_button(message)
 
 
 async def on_startup(dp):
