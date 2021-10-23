@@ -108,7 +108,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         print(f"Added user {user_data[0]} with userid={user_data[1]}")
     await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
                          f'Какой вопрос Вас интересует?',
-                         reply_markup=keyboards.start_kb)
+                         reply_markup=keyboards.start_kb, parse_mode='Markdown')
 
 
 @dp.message_handler(lambda message: message.text.lower() == 'отмена', state='*')
