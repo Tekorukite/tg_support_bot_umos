@@ -9,7 +9,7 @@ from aiogram.dispatcher.filters import Text
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, \
     InlineKeyboardButton
-from aiogram.utils.exceptions import MessageNotModified
+from aiogram.utils.exceptions import MessageNotModified, MessageCantBeDeleted, MessageToDeleteNotFound
 from aiogram.utils.executor import start_webhook
 import keyboards
 import texts
@@ -97,23 +97,31 @@ db = psycopg2.connect(
 cur = db.cursor()
 
 
-@dp.message_handler(commands="start")
+@dp.message_handler(commands="start", state='*')
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.finish()
     cur.execute("SELECT * FROM subscribers WHERE tg_user_id = %s;", [message.from_user.id])
-    if len(cur.fetchall()) == 0:
+    row = cur.fetchall()
+    if row is None or len(row) == 0:
         user_data = (message.from_user.first_name, message.from_user.id)
         cur.execute("""INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(%s, %s, CURRENT_DATE);""", user_data)
         cur.execute("COMMIT;")
         print(f"Added user {user_data[0]} with userid={user_data[1]}")
-    await message.answer(f'Привет, {message.from_user.first_name}\. Я бот техподдержки ЮМОС\. \n'
+    await message.answer(f'Привет, {message.from_user.first_name}. Я бот техподдержки ЮМОС. \n'
                          f'Какой вопрос Вас интересует?',
-                         reply_markup=keyboards.start_kb)
+                         reply_markup=keyboards.start_kb, parse_mode='Markdown')
+
+
+@dp.message_handler(lambda message: message.text.lower() == 'отмена', state='*')
+async def cmd_cancel_button(message: types.Message, state: FSMContext):
+    await state.finish()
+    await message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
 
 
 async def send_message_custom(user_id: int, text: str, disable_notification: bool = False) -> bool:
     try:
-        await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
+        msg = await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
+        await bot.pin_chat_message(chat_id=msg.chat.id, message_id=msg.message_id)
     except exceptions.BotBlocked:
         log.error(f"Target [ID:{user_id}]: blocked by user")
     except exceptions.ChatNotFound:
@@ -127,11 +135,12 @@ async def send_message_custom(user_id: int, text: str, disable_notification: boo
     except exceptions.TelegramAPIError:
         log.exception(f"Target [ID:{user_id}]: failed")
     else:
+        cur.execute(f"""INSERT INTO broadcast (chat_id, message_id) VALUES({msg.chat.id},{msg.message_id});""")
         return True
     return False
 
 
-async def broadcaster(users, text: str) -> int:
+async def broadcaster(users, text: str) -> (int, int):
     count = 0
     try:
         for user in users:
@@ -139,20 +148,59 @@ async def broadcaster(users, text: str) -> int:
                 count += 1
                 await asyncio.sleep(.04)
     finally:
-        log.info(f"{count} out of {len(users)} messages successful sent.")
-    return count
+        log.info(f" {count} out of {len(users)} messages successful sent.")
+    return count, len(users)
 
 
 @dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
 async def cmd_send_all(message: types.message):
     cur.execute("SELECT tg_user_id FROM subscribers;")
     users = cur.fetchall()
-    await broadcaster(users, message.text[8:])
+    send, total = await broadcaster(users, message.text[8:])
+    await message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
 
 
-@dp.message_handler(commands="payment")
-@dp.message_handler(lambda message: message.text.lower() == 'оплата')
-async def cmd_payment(message: types.Message):
+async def cmd_delete_message(chat_id: int, message_id: int) -> bool:
+    try:
+        await bot.delete_message(chat_id=chat_id, message_id=message_id)
+    except MessageToDeleteNotFound:
+        log.exception(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: not found.")
+    except MessageCantBeDeleted:
+        log.exception(f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: cant be deleted.")
+    except exceptions.RetryAfter as e:
+        log.error(
+            f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds.")
+        await asyncio.sleep(e.timeout)
+        return await cmd_delete_all(chat_id, message_id)
+    else:
+        return True
+    return False
+
+
+@dp.message_handler(lambda message: message.text == 'DELETE BROADCAST', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
+async def cmd_delete_all(message: types.message):
+    cur.execute("""SELECT * FROM broadcast;""")
+    count = 0
+    messages = cur.fetchall()
+    if messages is None or len(messages) == 0:
+        await message.reply("Нечего удалять. Ты точно отправлял броадкасты?", parse_mode='Markdown')
+    else:
+        try:
+            for row in messages:
+                if await cmd_delete_message(row[1], row[2]):
+                    count += 1
+                    await asyncio.sleep(.04)
+        finally:
+            log.info(f" {count} out of {len(messages)} messages successfully deleted.")
+            await message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.", parse_mode='Markdown')
+            cur.execute("""DELETE FROM broadcast;""")
+            db.commit()
+
+
+@dp.message_handler(commands="payment", state='*')
+@dp.message_handler(lambda message: message.text.lower() == 'оплата', state='*')
+async def cmd_payment(message: types.Message, state: FSMContext):
+    await state.finish()
     await Support.payment.set()
     await message.answer(f"Каким способом оплаты Вы желаете воспользоваться?\n",
                          reply_markup=keyboards.inline_kb_payment)
@@ -192,12 +240,6 @@ async def cmd_back_payment(call: types.CallbackQuery):
                                  reply_markup=keyboards.inline_kb_payment)
 
 
-@dp.message_handler(lambda message: message.text.lower() == 'отмена', state='*')
-async def cmd_cancel_button(message: types.Message, state: FSMContext):
-    await state.finish()
-    await message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
-
-
 @dp.callback_query_handler(text='cancel', state="*")
 async def cmd_cancel(call: types.CallbackQuery, state: FSMContext):
     await state.finish()
@@ -207,9 +249,10 @@ async def cmd_cancel(call: types.CallbackQuery, state: FSMContext):
         await call.message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
 
 
-@dp.message_handler(commands="router")
-@dp.message_handler(lambda message: message.text.lower() == 'настройка роутера')
-async def cmd_router(message: types.Message):
+@dp.message_handler(commands="router", state='*')
+@dp.message_handler(lambda message: message.text.lower() == 'настройка роутера', state='*')
+async def cmd_router(message: types.Message, state: FSMContext):
+    await state.finish()
     await message.answer(f"Информацию о настройке роутера для работы в нашей сети можно найти по ссылке ниже\.",
                          reply_markup=keyboards.inline_kb_router)
 
@@ -217,6 +260,7 @@ async def cmd_router(message: types.Message):
 @dp.message_handler(commands="faq", state='*')
 @dp.message_handler(lambda message: message.text.lower() == 'faq', state='*')
 async def cmd_faq(message: types.Message, state: FSMContext):
+    await state.finish()
     await Support.faq.set()
     await state.update_data(current_faq_page=1)
     await message.answer(f'Распространенные вопросы:\n', reply_markup=keyboards.inline_faq_kb_1)
@@ -272,15 +316,20 @@ async def cmd_next(call: types.CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(text='support', state='*')
 async def cmd_support_inline(call: types.CallbackQuery, state: FSMContext):
+    await state.finish()
     await call.message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
     await Support.dormitory.set()
 
 
-@dp.message_handler(commands="support")
-@dp.message_handler(lambda message: message.text.lower() == 'заявка в техподдержку')
+@dp.message_handler(commands="support", state='*')
+@dp.message_handler(lambda message: message.text.lower() == 'заявка в техподдержку', state='*')
 async def cmd_support(message: types.Message, state: FSMContext):
+    await state.finish()
     cur.execute(
-        f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id});""")
+        f"""SELECT * FROM tickets 
+        WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id})
+        ORDER BY ticket_id DESC
+        LIMIT 1;""")
     ticket = cur.fetchone()
     print(ticket)
     if ticket is None or len(ticket) == 0:
@@ -316,55 +365,61 @@ async def cmd_building(message: types.Message, state: FSMContext):
     await state.update_data(chosen_dormitory=message.text)
 
     await Support.next()
-    await message.answer('Укажите корпус\. Если нет, поставьте "\-"')
+    await message.answer('Укажите корпус\. Если нет, поставьте "\-"',
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.building)
 async def cmd_building(message: types.Message, state: FSMContext):
     await state.update_data(chosen_building=message.text)
     await Support.next()
-    await message.answer("Введите номер комнаты\.")
+    await message.answer("Введите номер комнаты\.", reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.room)
 async def cmd_room(message: types.Message, state: FSMContext):
     await state.update_data(chosen_room=message.text)
     await Support.next()
-    await message.answer("Укажите, как к Вам обращаться\.")
+    await message.answer("Укажите, как к Вам обращаться\.",
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.name)
 async def cmd_name(message: types.Message, state: FSMContext):
     await state.update_data(chosen_name=message.text)
     await Support.next()
-    await message.answer("Введите номер телефона\.")
+    await message.answer("Введите номер телефона\.", reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.phone)
 async def cmd_phone(message: types.Message, state: FSMContext):
     await state.update_data(chosen_phone=message.text)
     await Support.next()
-    await message.answer("Укажите свой логин или лицевой счет\.")
+    await message.answer("Укажите свой логин или лицевой счет\.",
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.login)
 async def cmd_login(message: types.Message, state: FSMContext):
     await state.update_data(chosen_login=message.text)
     await Support.next()
-    await message.answer("Опишите проблему \(подробно\)\.")
+    await message.answer("Опишите проблему \(подробно\)\.",
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
-@dp.callback_query_handler(text='commit')
+@dp.callback_query_handler(text='commit', state='*')
 async def cmd_continue_problem(call: types.CallbackQuery, state: FSMContext):
     await Support.problem.set()
-    await call.message.answer("Опишите проблему \(подробно\)\.")
+    await call.message.answer("Опишите проблему \(подробно\)\.",
+                              reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.problem)
 async def cmd_problem(message: types.Message, state: FSMContext):
     await state.update_data(chosen_problem=message.text)
     await Support.next()
-    await message.answer("В какое время можно перезвонить \(Например: с 15\.00 до 23\.00 или 01\.01\.18 днем\)\.")
+    await message.answer("В какое время можно перезвонить \(Например: с 15\.00 до 23\.00 или 01\.01\.18 днем\)\.",
+                         reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
 
 
 @dp.message_handler(state=Support.call_time)
@@ -400,9 +455,12 @@ async def cmd_edit(call: types.CallbackQuery, state: FSMContext):
 async def cmd_send(call: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     cur.execute(
-        f"""SELECT * FROM tickets WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.from_user.id});""")
+        f"""SELECT * FROM tickets 
+        WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.from_user.id}) AND request_date=CURRENT_DATE
+        ORDER BY ticket_id DESC
+        LIMIT 5;""")
     row = cur.fetchall()
-    if row is None or len(row) == 0:
+    if row is None or len(row) < 5:
         cur.execute(f"""INSERT INTO tickets 
                     (user_id, dorm, building, room, fullname, login, phone, request_date) 
                     VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.from_user.id}), %s, %s, %s, %s, %s, %s, CURRENT_DATE);""",
@@ -410,68 +468,72 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
         db.commit()
+        if user_data['chosen_dormitory'] in ['ДСВ', 'ДСК', 'ДСШ', 'ДСЯ']:
+            url = DSVKSY_GFORM['url']
+            sending_data = {
+                DSVKSY_GFORM['dorm']: user_data['chosen_dormitory'] + ' ' + user_data['chosen_building'],
+                DSVKSY_GFORM['room']: user_data['chosen_room'],
+                DSVKSY_GFORM['name']: user_data['chosen_name'],
+                DSVKSY_GFORM['login']: user_data['chosen_login'],
+                DSVKSY_GFORM['phone']: user_data['chosen_phone'] + ' from TG_BOT',
+                DSVKSY_GFORM['problem']: user_data['chosen_problem'],
+                DSVKSY_GFORM['time']: user_data['chosen_time']
+            }
+        elif user_data['chosen_dormitory'] == 'ДСЛ':
+            url = DSL_GFORM['url']
+            sending_data = {
+                DSL_GFORM['building_other']: user_data['chosen_building'],
+                DSL_GFORM['building']: '__other_option__',
+                DSL_GFORM['room']: user_data['chosen_room'],
+                DSL_GFORM['name']: user_data['chosen_name'],
+                DSL_GFORM['login']: user_data['chosen_login'],
+                DSL_GFORM['phone']: user_data['chosen_phone'] + ' from TG_BOT',
+                DSL_GFORM['problem']: user_data['chosen_problem'],
+                DSL_GFORM['time']: user_data['chosen_time']
+            }
+        elif user_data['chosen_dormitory'] == 'ФДС':
+            url = FDS_GFORM['url']
+            sending_data = {
+                FDS_GFORM['building_other']: user_data['chosen_building'],
+                FDS_GFORM['building']: '__other_option__',
+                FDS_GFORM['room']: user_data['chosen_room'],
+                FDS_GFORM['name']: user_data['chosen_name'],
+                FDS_GFORM['login']: user_data['chosen_login'],
+                FDS_GFORM['phone']: user_data['chosen_phone'] + ' from TG_BOT',
+                FDS_GFORM['problem']: user_data['chosen_problem'],
+                FDS_GFORM['time']: user_data['chosen_time']
+            }
+        elif user_data['chosen_dormitory'] == 'ГЗ':
+            url = DS_GFORM['url']
+            sending_data = {
+                DS_GFORM['room']: user_data['chosen_building'] + ' ' + user_data['chosen_room'],
+                DS_GFORM['name']: user_data['chosen_name'],
+                DS_GFORM['login']: user_data['chosen_login'],
+                DS_GFORM['phone']: user_data['chosen_phone'] + ' from TG_BOT',
+                DS_GFORM['problem']: user_data['chosen_problem'],
+                DS_GFORM['time']: user_data['chosen_time']
+            }
+        sent = requests.post(url, sending_data)
+        if sent:
+            await call.message.answer('Заявка успешно отправлена\!')
+            await state.finish()
+            await call.message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
+        else:
+            await call.message.answer('Что-то пошло не так\. Попробуйте еще раз\.')
+            await cmd_print(call.message, state)
     else:
-        cur.execute(f"""UPDATE tickets
-                    SET (dorm, building, room, fullname, login, phone, request_date) = 
-                    (%s, %s, %s, %s, %s, %s, CURRENT_DATE)
-                    WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={call.from_user.id});""",
-                    (user_data['chosen_dormitory'], user_data['chosen_building'], user_data['chosen_room'],
-                     user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
-                    )
-        db.commit()
-    if user_data['chosen_dormitory'] in ['ДСВ', 'ДСК', 'ДСШ', 'ДСЯ']:
-        url = DSVKSY_GFORM['url']
-        sending_data = {
-            DSVKSY_GFORM['dorm']: user_data['chosen_dormitory'] + ' ' + user_data['chosen_building'],
-            DSVKSY_GFORM['room']: user_data['chosen_room'],
-            DSVKSY_GFORM['name']: user_data['chosen_name'],
-            DSVKSY_GFORM['login']: user_data['chosen_login'],
-            DSVKSY_GFORM['phone']: user_data['chosen_phone'] + ' from TG_BOT',
-            DSVKSY_GFORM['problem']: user_data['chosen_problem'],
-            DSVKSY_GFORM['time']: user_data['chosen_time']
-        }
-    elif user_data['chosen_dormitory'] == 'ДСЛ':
-        url = DSL_GFORM['url']
-        sending_data = {
-            DSL_GFORM['building_other']: user_data['chosen_building'],
-            DSL_GFORM['building']: '__other_option__',
-            DSL_GFORM['room']: user_data['chosen_room'],
-            DSL_GFORM['name']: user_data['chosen_name'],
-            DSL_GFORM['login']: user_data['chosen_login'],
-            DSL_GFORM['phone']: user_data['chosen_phone'] + ' from TG_BOT',
-            DSL_GFORM['problem']: user_data['chosen_problem'],
-            DSL_GFORM['time']: user_data['chosen_time']
-        }
-    elif user_data['chosen_dormitory'] == 'ФДС':
-        url = FDS_GFORM['url']
-        sending_data = {
-            FDS_GFORM['building_other']: user_data['chosen_building'],
-            FDS_GFORM['building']: '__other_option__',
-            FDS_GFORM['room']: user_data['chosen_room'],
-            FDS_GFORM['name']: user_data['chosen_name'],
-            FDS_GFORM['login']: user_data['chosen_login'],
-            FDS_GFORM['phone']: user_data['chosen_phone'] + ' from TG_BOT',
-            FDS_GFORM['problem']: user_data['chosen_problem'],
-            FDS_GFORM['time']: user_data['chosen_time']
-        }
-    elif user_data['chosen_dormitory'] == 'ГЗ':
-        url = DS_GFORM['url']
-        sending_data = {
-            DS_GFORM['room']: user_data['chosen_building'] + ' ' + user_data['chosen_room'],
-            DS_GFORM['name']: user_data['chosen_name'],
-            DS_GFORM['login']: user_data['chosen_login'],
-            DS_GFORM['phone']: user_data['chosen_phone'] + ' from TG_BOT',
-            DS_GFORM['problem']: user_data['chosen_problem'],
-            DS_GFORM['time']: user_data['chosen_time']
-        }
-    sent = requests.post(url, sending_data)
-    if sent:
-        await call.message.answer('Заявка успешно отправлена\!')
-        await state.finish()
-        await call.message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
-    else:
-        await call.message.answer('Что-то пошло не так\. Попробуйте еще раз\.')
-        await cmd_print(call.message, state)
+        await call.message.answer("К сожалению, Вы отправили уже 5 заявок в техподдержку сегодня. "
+                                  "Вы можете написать нам на почту: msu.umos@gmail.com\n"
+                                  "или позвонить по телефону: +7 (499) 553-02-17",
+                                  parse_mode='Markdown',
+                                  reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
+
+
+@dp.message_handler(state='*')
+async def cmd_unknown(message: types.Message, state: FSMContext):
+    await message.answer("Я не смог распознать данную команду. Попробуйте воспользоваться клавиатурой ниже.",
+                         parse_mode='Markdown')
+    await cmd_cancel_button(message, state)
 
 
 async def on_startup(dp):
