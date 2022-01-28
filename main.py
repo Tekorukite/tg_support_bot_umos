@@ -118,7 +118,7 @@ async def cmd_cancel_button(message: types.Message, state: FSMContext):
     await message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
 
 
-async def send_message_custom(user_id: int, text: str, disable_notification: bool = False) -> bool:
+async def send_message_custom(user_id: int, text: str, disable_notification: bool = True) -> bool:
     try:
         msg = await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
         await bot.pin_chat_message(chat_id=msg.chat.id, message_id=msg.message_id)
@@ -134,6 +134,8 @@ async def send_message_custom(user_id: int, text: str, disable_notification: boo
         log.error(f"Target [ID:{user_id}]: user is deactivated")
     except exceptions.TelegramAPIError:
         log.exception(f"Target [ID:{user_id}]: failed")
+    except:
+        log.error(f"Unexpected error")
     else:
         cur.execute(f"""INSERT INTO broadcast (chat_id, message_id) VALUES({msg.chat.id},{msg.message_id});""")
         return True
@@ -156,7 +158,20 @@ async def broadcaster(users, text: str) -> (int, int):
 async def cmd_send_all(message: types.message):
     cur.execute("SELECT tg_user_id FROM subscribers;")
     users = cur.fetchall()
-    send, total = await broadcaster(users, message.text[8:])
+    send = 0
+    total = 0
+    i = 0
+    i_max = (len(users)-1)//25
+    while i <= i_max:
+        if i == i_max:
+            send_now, total_now = await broadcaster(users[i*25+1:], message.text[8:])
+        else:
+            send_now, total_now = await broadcaster(users[i*25+1:(i+1)*25], message.text[8:])
+        log.info(f" {send_now} out of {total_now} messages successful sent for now.")
+        send += send_now
+        total += total_now
+    log.info(f" {send} out of {total} messages successful sent.")
+    
     #await message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
 
 
@@ -171,7 +186,7 @@ async def cmd_delete_message(chat_id: int, message_id: int) -> bool:
         log.error(
             f"Target [CHAT_ID:{chat_id}, MSG_ID:{message_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds.")
         await asyncio.sleep(e.timeout)
-        return await cmd_delete_all(chat_id, message_id)
+        return await cmd_delete_message(chat_id, message_id)
     else:
         return True
     return False
@@ -190,10 +205,11 @@ async def cmd_delete_all(message: types.message):
                 if await cmd_delete_message(row[1], row[2]):
                     count += 1
                     await asyncio.sleep(.04)
+                    cur.execute(f"""DELETE FROM broadcast WHERE chat_id = {row[1]} AND message_id = {row[2]};""")
         finally:
             log.info(f" {count} out of {len(messages)} messages successfully deleted.")
             await message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.", parse_mode='Markdown')
-            cur.execute("""DELETE FROM broadcast;""")
+            #cur.execute("""DELETE FROM broadcast;""")
             db.commit()
 
 
