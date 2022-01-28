@@ -157,7 +157,7 @@ async def cmd_send_all(message: types.message):
     cur.execute("SELECT tg_user_id FROM subscribers;")
     users = cur.fetchall()
     send, total = await broadcaster(users, message.text[8:])
-    await message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
+    #await message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
 
 
 async def cmd_delete_message(chat_id: int, message_id: int) -> bool:
