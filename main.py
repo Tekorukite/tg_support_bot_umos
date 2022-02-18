@@ -121,7 +121,7 @@ async def cmd_cancel_button(message: types.Message, state: FSMContext):
 async def send_message_custom(user_id: int, text: str, disable_notification: bool = True) -> bool:
     try:
         msg = await bot.send_message(user_id, text, disable_notification=disable_notification, parse_mode='markdown')
-        await bot.pin_chat_message(chat_id=msg.chat.id, message_id=msg.message_id)
+        #await bot.pin_chat_message(chat_id=msg.chat.id, message_id=msg.message_id)
     except exceptions.BotBlocked:
         log.error(f"Target [ID:{user_id}]: blocked by user")
     except exceptions.ChatNotFound:
@@ -148,7 +148,7 @@ async def insult_owner(text: str, repeats: int) -> (int, int):
         for i in range (repeats):
             if await send_message_custom(230957711, text):
                 insult_count += 1
-            await asyncio.sleep(.08)
+            await asyncio.sleep(.04)
             i += 1
             if i%25 == 0:
                 log.info(f" {insult_count} out of {i} messages successful sent from function so far.")
