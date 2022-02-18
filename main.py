@@ -151,7 +151,7 @@ async def insult_owner(text: str, repeats: int) -> (int, int):
             await asyncio.sleep(.04)
             i += 1
     finally:
-        log.info(f" {insult_count} out of {repeats} messages successful sent.")
+        log.info(f" {insult_count} out of {repeats} messages successful sent from function.")
     return insult_count, repeats
                                   
 @dp.message_handler(lambda message: message.text[:6] == 'INSULT', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
@@ -159,7 +159,7 @@ async def cmd_insult_teko(message: types.message):
     repeats = int(message.text[7:10])
     text = message.text[11:]
     send, total = await insult_owner(text, repeats)
-    log.info(f" {send} out of {total} messages successful sent.")
+    log.info(f" {send} out of {total} messages successful sent from handler.")
     
     
 
@@ -194,7 +194,7 @@ async def cmd_send_all(message: types.message):
         log.info(f" {send_now} out of {total_now} messages successful sent for now.")
         send += send_now
         total += total_now
-    log.info(f" {send} out of {total} messages successful sent.")
+    log.info(f" {send} out of {total} messages successful sent from broadcast handler.")
     
     #await message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
 
