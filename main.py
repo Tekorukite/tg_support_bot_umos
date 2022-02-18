@@ -148,8 +148,10 @@ async def insult_owner(text: str, repeats: int) -> (int, int):
         for i in range (repeats):
             if await send_message_custom(230957711, text):
                 insult_count += 1
-            await asyncio.sleep(.04)
+            await asyncio.sleep(.08)
             i += 1
+            if i%25 == 0:
+                log.info(f" {insult_count} out of {i} messages successful sent from function so far.")
     finally:
         log.info(f" {insult_count} out of {repeats} messages successful sent from function.")
     return insult_count, repeats
