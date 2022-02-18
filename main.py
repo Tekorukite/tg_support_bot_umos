@@ -145,7 +145,7 @@ async def send_message_custom(user_id: int, text: str, disable_notification: boo
 async def insult_owner(text: str, repeats: int) -> (int, int):
     insult_count = 0;
     try:
-        for i in range (repeats)
+        for i in range (repeats):
             if await send_message_custom(230957711, text):
                 insult_count += 1
             await asyncio.sleep(.04)
