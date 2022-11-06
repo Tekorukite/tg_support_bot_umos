@@ -180,23 +180,23 @@ async def broadcaster(users, text: str) -> (int, int):
     return count, len(users)
 
 
-@dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
-async def cmd_send_all(message: types.message):
-    cur.execute("SELECT tg_user_id FROM subscribers;")
-    users = cur.fetchall()
-    send = 0
-    total = 0
-    i = 0
-    i_max = (len(users)-1)//25
-    while i <= i_max:
-        if i == i_max:
-            send_now, total_now = await broadcaster(users[i*25+1:], message.text[8:])
-        else:
-            send_now, total_now = await broadcaster(users[i*25+1:(i+1)*25], message.text[8:])
-        log.info(f" {send_now} out of {total_now} messages successful sent for now.")
-        send += send_now
-        total += total_now
-    log.info(f" {send} out of {total} messages successful sent from broadcast handler.")
+#@dp.message_handler(lambda message: message.text[:7] == 'SENDALL', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
+#async def cmd_send_all(message: types.message):
+    #cur.execute("SELECT tg_user_id FROM subscribers;")
+    #users = cur.fetchall()
+    #send = 0
+    #total = 0
+    #i = 0
+    #i_max = (len(users)-1)//25
+    #while i <= i_max:
+        #if i == i_max:
+            #send_now, total_now = await broadcaster(users[i*25+1:], message.text[8:])
+        #else:
+            #send_now, total_now = await broadcaster(users[i*25+1:(i+1)*25], message.text[8:])
+        #log.info(f" {send_now} out of {total_now} messages successful sent for now.")
+        #send += send_now
+        #total += total_now
+    #log.info(f" {send} out of {total} messages successful sent from broadcast handler.")
     
     #await message.reply(f"Сообщение доставлено {send} из {total} пользователей.", parse_mode='Markdown')
 
