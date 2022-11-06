@@ -142,26 +142,26 @@ async def send_message_custom(user_id: int, text: str, disable_notification: boo
     return False
 
 
-async def insult_owner(text: str, repeats: int) -> (int, int):
-    insult_count = 0;
-    try:
-        for i in range (repeats):
-            if await send_message_custom(230957711, text):
-                insult_count += 1
-            await asyncio.sleep(.04)
-            i += 1
-            if i%25 == 0:
-                log.info(f" {insult_count} out of {i} messages successful sent from function so far.")
-    finally:
-        log.info(f" {insult_count} out of {repeats} messages successful sent from function.")
-    return insult_count, repeats
+#async def insult_owner(text: str, repeats: int) -> (int, int):
+    #insult_count = 0;
+    #try:
+        #for i in range (repeats):
+            #if await send_message_custom(230957711, text):
+                #insult_count += 1
+            #await asyncio.sleep(.04)
+            #i += 1
+            #if i%25 == 0:
+                #log.info(f" {insult_count} out of {i} messages successful sent from function so far.")
+    #finally:
+        #log.info(f" {insult_count} out of {repeats} messages successful sent from function.")
+    #return insult_count, repeats
                                   
-@dp.message_handler(lambda message: message.text[:6] == 'INSULT', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
-async def cmd_insult_teko(message: types.message):
-    repeats = int(message.text[7:10])
-    text = message.text[11:]
-    send, total = await insult_owner(text, repeats)
-    log.info(f" {send} out of {total} messages successful sent from handler.")
+#@dp.message_handler(lambda message: message.text[:6] == 'INSULT', chat_id=TELEGRAM_SUPPORT_CHAT_ID)
+#async def cmd_insult_teko(message: types.message):
+    #repeats = int(message.text[7:10])
+    #text = message.text[11:]
+    #send, total = await insult_owner(text, repeats)
+    #log.info(f" {send} out of {total} messages successful sent from handler.")
     
     
 
