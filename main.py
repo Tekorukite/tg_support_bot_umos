@@ -13,11 +13,16 @@ from aiogram.utils.exceptions import MessageNotModified, MessageCantBeDeleted, M
 from aiogram.utils.executor import start_webhook
 import keyboards
 import texts
-from settings import TELEGRAM_TOKEN, HEROKU_APP_NAME, PORT, TELEGRAM_SUPPORT_CHAT_ID
+from settings import TELEGRAM_TOKEN, HEROKU_APP_NAME, PORT, TELEGRAM_SUPPORT_CHAT_ID, TRELLO_KEY, TRELLO_TOKEN
 from aiogram.utils import exceptions
 import asyncio
+import json
+from datetime import datetime
+import pytz
 
 storage = MemoryStorage()
+
+MOSCOW = pytz.timezone('Europe/Moscow')
 
 WEBHOOK_URL = f"https://{HEROKU_APP_NAME}.herokuapp.com/{TELEGRAM_TOKEN}"
 WEBHOOK_HOST = f"https://{HEROKU_APP_NAME}.herokuapp.com"
@@ -65,6 +70,19 @@ DSVKSY_GFORM = {
     'room': 'entry.100962389',
     'problem': 'entry.1401337801',
     'time': 'entry.97627762'
+}
+
+TRELLO_URL = "https://api.trello.com/1/cards"
+TRELLO_MSU_BOARD_ID = '5d480632c826f51e58a2162'
+
+TRELLO_DORM_IDLIST = {
+    'ГЗ': '6362bfaf7222de00add6868b',
+    'ДСЛ': '6362bfaf7222de00add6868c',
+    'ФДС': '6362bfaf7222de00add6868c',
+    'ДСВ': '6362bfd3c9303b0163cb2b09',
+    'ДСК': '6362bfd3c9303b0163cb2b09',
+    'ДСШ': '6362bfd3c9303b0163cb2b09',
+    'ДСЯ': '6362bfd3c9303b0163cb2b09'
 }
 
 
@@ -168,7 +186,7 @@ async def send_message_custom(user_id: int, text: str, disable_notification: boo
 
 
 
-async def broadcaster(users, text: str) -> (int, int):
+async def broadcaster(users, text: str):
     count = 0
     try:
         for user in users:
@@ -373,7 +391,7 @@ async def cmd_support(message: types.Message, state: FSMContext):
         ORDER BY ticket_id DESC
         LIMIT 1;""")
     ticket = cur.fetchone()
-    print(ticket)
+    #print(ticket)
     if ticket is None or len(ticket) == 0:
         await message.answer('Выберите общежитие:', reply_markup=keyboards.dorm_kb)
         await Support.dormitory.set()
@@ -510,6 +528,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
         db.commit()
+        TICKET_TIME = datetime.now(MOSCOW).strftime('%Y-%m-%d %H:%M:%S')
         if user_data['chosen_dormitory'] in ['ДСВ', 'ДСК', 'ДСШ', 'ДСЯ']:
             url = DSVKSY_GFORM['url']
             sending_data = {
@@ -521,6 +540,22 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 DSVKSY_GFORM['problem']: user_data['chosen_problem'],
                 DSVKSY_GFORM['time']: user_data['chosen_time']
             }
+            #Trello api start
+            trello_headers = {"Accept": "application/json"}
+            trello_query = {
+                'idList': TRELLO_DORM_IDLIST['ДСВ'],
+                'key': TRELLO_KEY,
+                'token': TRELLO_TOKEN,
+                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
+                'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
+            }
+            response = requests.request(
+                "POST",
+                TRELLO_URL,
+                headers=trello_headers,
+                params=trello_query
+            )
+            #Trello api end
         elif user_data['chosen_dormitory'] == 'ДСЛ':
             url = DSL_GFORM['url']
             sending_data = {
@@ -533,6 +568,22 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 DSL_GFORM['problem']: user_data['chosen_problem'],
                 DSL_GFORM['time']: user_data['chosen_time']
             }
+            #Trello api start
+            trello_headers = {"Accept": "application/json"}
+            trello_query = {
+                'idList': TRELLO_DORM_IDLIST['ДСЛ'],
+                'key': TRELLO_KEY,
+                'token': TRELLO_TOKEN,
+                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
+                'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
+            }
+            response = requests.request(
+                "POST",
+                TRELLO_URL,
+                headers=trello_headers,
+                params=trello_query
+            )
+            #Trello api end
         elif user_data['chosen_dormitory'] == 'ФДС':
             url = FDS_GFORM['url']
             sending_data = {
@@ -545,6 +596,22 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 FDS_GFORM['problem']: user_data['chosen_problem'],
                 FDS_GFORM['time']: user_data['chosen_time']
             }
+            #Trello api start
+            trello_headers = {"Accept": "application/json"}
+            trello_query = {
+                'idList': TRELLO_DORM_IDLIST['ФДС'],
+                'key': TRELLO_KEY,
+                'token': TRELLO_TOKEN,
+                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
+                'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
+            }
+            response = requests.request(
+                "POST",
+                TRELLO_URL,
+                headers=trello_headers,
+                params=trello_query
+            )
+            #Trello api end
         elif user_data['chosen_dormitory'] == 'ГЗ':
             url = DS_GFORM['url']
             sending_data = {
@@ -555,8 +622,25 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 DS_GFORM['problem']: user_data['chosen_problem'],
                 DS_GFORM['time']: user_data['chosen_time']
             }
+            #Trello api start
+            trello_headers = {"Accept": "application/json"}
+            trello_query = {
+                'idList': TRELLO_DORM_IDLIST['ГЗ'],
+                'key': TRELLO_KEY,
+                'token': TRELLO_TOKEN,
+                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
+                'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
+            }
+            response = requests.request(
+                "POST",
+                TRELLO_URL,
+                headers=trello_headers,
+                params=trello_query
+            )
+            #Trello api end
         sent = requests.post(url, sending_data)
         if sent:
+            log.info(json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": ")))
             await call.message.answer('Заявка успешно отправлена\!')
             await state.finish()
             await call.message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
