@@ -410,7 +410,7 @@ async def cmd_support(message: types.Message, state: FSMContext):
                              f"Имя: {user_data['chosen_name']}\n"
                              f"Номер телефона: {user_data['chosen_phone']}\n"
                              f"Логин: {user_data['chosen_login']}\n",
-                             reply_markup=InlineKeyboardMarkup(row_width=1).add(keyboards.inline_commit,
+                             reply_markup=InlineKeyboardMarkup(row_width=1, one_time_keyboard=True).add(keyboards.inline_commit,
                                                                                 keyboards.inline_edit,
                                                                                 keyboards.inline_cancel), parse_mode=""
                              )
