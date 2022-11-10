@@ -78,7 +78,7 @@ TRELLO_MSU_BOARD_ID = '5d480632c826f51e58a2162'
 TRELLO_DORM_IDLIST = {
     'ГЗ': '6362bfaf7222de00add6868b',
     'ДСЛ': '6362bfaf7222de00add6868c',
-    'ФДС': '6362bfaf7222de00add6868c',
+    'ФДС': '6362bfaf7222de00add6868d',
     'ДСВ': '6362bfd3c9303b0163cb2b09',
     'ДСК': '6362bfd3c9303b0163cb2b09',
     'ДСШ': '6362bfd3c9303b0163cb2b09',
