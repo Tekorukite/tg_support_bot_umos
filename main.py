@@ -501,7 +501,7 @@ async def cmd_print(message: types.Message, state: FSMContext):
                          f"Логин: {user_data['chosen_login']}\n"
                          f"Пробелма: {user_data['chosen_problem']}\n"
                          f"Время звонка: {user_data['chosen_time']}\n",
-                         reply_markup=InlineKeyboardMarkup(row_width=1).add(keyboards.inline_send,
+                         reply_markup=InlineKeyboardMarkup(row_width=1, one_time_keyboard=True).add(keyboards.inline_send,
                                                                             keyboards.inline_edit,
                                                                             keyboards.inline_cancel), parse_mode="")
 
