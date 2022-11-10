@@ -546,7 +546,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'idList': TRELLO_DORM_IDLIST['ДСВ'],
                 'key': TRELLO_KEY,
                 'token': TRELLO_TOKEN,
-                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
+                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
             response = requests.request(
@@ -574,7 +574,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'idList': TRELLO_DORM_IDLIST['ДСЛ'],
                 'key': TRELLO_KEY,
                 'token': TRELLO_TOKEN,
-                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
+                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
             response = requests.request(
@@ -602,7 +602,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'idList': TRELLO_DORM_IDLIST['ФДС'],
                 'key': TRELLO_KEY,
                 'token': TRELLO_TOKEN,
-                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
+                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
             response = requests.request(
@@ -628,7 +628,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'idList': TRELLO_DORM_IDLIST['ГЗ'],
                 'key': TRELLO_KEY,
                 'token': TRELLO_TOKEN,
-                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
+                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
             
