@@ -640,7 +640,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
             #Trello api end
         sent = requests.post(url, sending_data)
         if sent:
-            log.info(json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": ")))
+            #log.info(json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": ")))
             await call.message.answer('Заявка успешно отправлена\!')
             await state.finish()
             await call.message.answer(f'Какой вопрос Вас интересует?', reply_markup=keyboards.start_kb)
