@@ -549,12 +549,6 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
-            response = requests.request(
-                "POST",
-                TRELLO_URL,
-                headers=trello_headers,
-                params=trello_query
-            )
             #Trello api end
         elif user_data['chosen_dormitory'] == 'ДСЛ':
             url = DSL_GFORM['url']
@@ -577,12 +571,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
-            response = requests.request(
-                "POST",
-                TRELLO_URL,
-                headers=trello_headers,
-                params=trello_query
-            )
+            
             #Trello api end
         elif user_data['chosen_dormitory'] == 'ФДС':
             url = FDS_GFORM['url']
@@ -605,12 +594,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
-            response = requests.request(
-                "POST",
-                TRELLO_URL,
-                headers=trello_headers,
-                params=trello_query
-            )
+            
             #Trello api end
         elif user_data['chosen_dormitory'] == 'ГЗ':
             url = DS_GFORM['url']
