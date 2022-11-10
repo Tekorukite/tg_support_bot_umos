@@ -631,14 +631,15 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} + ' from TG_BOT'",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
-            response = requests.request(
+            
+            #Trello api end
+        sent = requests.post(url, sending_data)
+        trello_sent = requests.request(
                 "POST",
                 TRELLO_URL,
                 headers=trello_headers,
                 params=trello_query
             )
-            #Trello api end
-        sent = requests.post(url, sending_data)
         if sent:
             #log.info(json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": ")))
             await call.message.answer('Заявка успешно отправлена\!')
@@ -647,12 +648,17 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
         else:
             await call.message.answer('Что-то пошло не так\. Попробуйте еще раз\.')
             await cmd_print(call.message, state)
+        if trello_sent:
+            log.info(f"Trello card created {TICKET_TIME} {user_data['chosen_login']}")
+        else:
+            log.warning(f"Trello card was NOT created {TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_number']}")
     else:
         await call.message.answer("К сожалению, Вы отправили уже 5 заявок в техподдержку сегодня. "
                                   "Вы можете написать нам на почту: msu.umos@gmail.com\n"
                                   "или позвонить по телефону: +7 (499) 553-02-17",
                                   parse_mode='Markdown',
                                   reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel))
+        print("SPAMER DETECTED")
 
 
 @dp.message_handler(state='*')
