@@ -76,13 +76,13 @@ TRELLO_URL = "https://api.trello.com/1/cards"
 TRELLO_MSU_BOARD_ID = '5d480632c826f51e58a2162'
 
 TRELLO_DORM_IDLIST = {
-    'ГЗ': '6362bfaf7222de00add6868b',
-    'ДСЛ': '6362bfaf7222de00add6868c',
-    'ФДС': '6362bfaf7222de00add6868d',
-    'ДСВ': '6362bfd3c9303b0163cb2b09',
-    'ДСК': '6362bfd3c9303b0163cb2b09',
-    'ДСШ': '6362bfd3c9303b0163cb2b09',
-    'ДСЯ': '6362bfd3c9303b0163cb2b09'
+    'ГЗ': '5d491ea65f2dce023c5237e8',
+    'ДСЛ': '5d4916a59457c06e21cdf441',
+    'ФДС': '5d4924e8c2ef6b4b45ca2a46',
+    'ДСВ': '5d49250b9ba68c1bbe7f94e',
+    'ДСК': '5d49250b9ba68c1bbe7f94e',
+    'ДСШ': '5d49250b9ba68c1bbe7f94e',
+    'ДСЯ': '5d49250b9ba68c1bbe7f94e'
 }
 
 
@@ -651,7 +651,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
         if trello_sent:
             log.info(f"Trello card created {TICKET_TIME} {user_data['chosen_login']}")
         else:
-            log.warning(f"Trello card was NOT created {TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_number']}")
+            log.warning(f"Trello card was NOT created {TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']}")
     else:
         await call.message.answer("К сожалению, Вы отправили уже 5 заявок в техподдержку сегодня. "
                                   "Вы можете написать нам на почту: msu.umos@gmail.com\n"
