@@ -528,7 +528,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
         db.commit()
-        TICKET_TIME = datetime.now(MOSCOW).strftime('%Y-%m-%d %H:%M:%S')
+        TICKET_TIME = datetime.now(MOSCOW).strftime('%d-%m-%Y %H:%M:%S')
         if user_data['chosen_dormitory'] in ['ДСВ', 'ДСК', 'ДСШ', 'ДСЯ']:
             url = DSVKSY_GFORM['url']
             sending_data = {
@@ -541,14 +541,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 DSVKSY_GFORM['time']: user_data['chosen_time']
             }
             #Trello api start
-            trello_headers = {"Accept": "application/json"}
-            trello_query = {
-                'idList': TRELLO_DORM_IDLIST['ДСВ'],
-                'key': TRELLO_KEY,
-                'token': TRELLO_TOKEN,
-                'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
-                'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
-            }
+            
             #Trello api end
         elif user_data['chosen_dormitory'] == 'ДСЛ':
             url = DSL_GFORM['url']
@@ -615,7 +608,6 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext):
                 'name' : f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
                 'desc' : f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}"
             }
-            
             #Trello api end
         sent = requests.post(url, sending_data)
         trello_sent = requests.request(
