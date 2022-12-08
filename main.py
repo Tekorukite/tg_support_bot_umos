@@ -497,13 +497,13 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
             await call.message.answer(
                 f"Какой вопрос Вас интересует?", reply_markup=keyboards.start_kb
             )
-            await log.info(
+            log.info(
                 f"Trello card created {TICKET_TIME} {user_data['chosen_login']}"
             )
         else:
             await call.message.answer("Что-то пошло не так\. Попробуйте еще раз\.")
             await cmd_print(call.message, state)
-            await log.warning(
+            log.warning(
                 f"Trello card was NOT created {TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']}"
             )
 
@@ -515,7 +515,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
         )
-        await print("SPAMER DETECTED")
+        print("SPAMER DETECTED")
 
 
 @dp.message_handler(state="*")
@@ -556,10 +556,10 @@ async def on_startup(dp):
 
 
 async def on_shutdown(dp):
-    await logging.warning('Shutting down..')
+    logging.warning('Shutting down..')
     await bot.delete_webhook()
-    await db.close()
-    await logging.warning('Bye!')
+    db.close()
+    logging.warning('Bye!')
 
 
 if __name__ == "__main__":
