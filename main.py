@@ -311,8 +311,8 @@ async def cmd_support(message: types.Message, state: FSMContext) -> None:
             """INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(%s, %s, CURRENT_DATE);""",
             user,
         )
-        cur.execute("COMMIT;")
-        print(f"Added user {user[0]} with userid={user[1]}")
+        db.commit()
+        print(f"Added user {user[0]} with еп_user_id={user[1]}")
     cur.execute(
         f"""SELECT * FROM tickets 
         WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id})
@@ -360,7 +360,7 @@ async def cmd_building(message: types.Message, state: FSMContext) -> None:
     await Support.next()
     await message.answer(
         'Укажите корпус\. Если нет, поставьте "\-"',
-        reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
+        reply_markup=InlineKeyboardMarkup(one_time_keyboard=True).add(keyboards.inline_cancel),
     )
 
 
@@ -370,7 +370,7 @@ async def cmd_building(message: types.Message, state: FSMContext) -> None:
     await Support.next()
     await message.answer(
         "Введите номер комнаты\.",
-        reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
+        reply_markup=InlineKeyboardMarkup(one_time_keyboard=True).add(keyboards.inline_cancel),
     )
 
 
@@ -380,7 +380,7 @@ async def cmd_room(message: types.Message, state: FSMContext) -> None:
     await Support.next()
     await message.answer(
         "Укажите, как к Вам обращаться\.",
-        reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
+        reply_markup=InlineKeyboardMarkup(one_time_keyboard=True).add(keyboards.inline_cancel),
     )
 
 
@@ -390,7 +390,7 @@ async def cmd_name(message: types.Message, state: FSMContext) -> None:
     await Support.next()
     await message.answer(
         "Введите номер телефона\.",
-        reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
+        reply_markup=InlineKeyboardMarkup(one_time_keyboard=True).add(keyboards.inline_cancel),
     )
 
 
@@ -400,7 +400,7 @@ async def cmd_phone(message: types.Message, state: FSMContext) -> None:
     await Support.next()
     await message.answer(
         "Укажите свой логин или лицевой счет\.",
-        reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
+        reply_markup=InlineKeyboardMarkup(one_time_keyboard=True).add(keyboards.inline_cancel),
     )
 
 
@@ -410,7 +410,7 @@ async def cmd_login(message: types.Message, state: FSMContext) -> None:
     await Support.next()
     await message.answer(
         "Опишите проблему \(подробно\)\.",
-        reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
+        reply_markup=InlineKeyboardMarkup(one_time_keyboard=True).add(keyboards.inline_cancel),
     )
 
 
@@ -419,7 +419,7 @@ async def cmd_continue_problem(call: types.CallbackQuery, state: FSMContext) -> 
     await Support.problem.set()
     await call.message.answer(
         "Опишите проблему \(подробно\)\.",
-        reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
+        reply_markup=InlineKeyboardMarkup(one_time_keyboard=True).add(keyboards.inline_cancel),
     )
 
 
@@ -429,7 +429,7 @@ async def cmd_problem(message: types.Message, state: FSMContext) -> None:
     await Support.next()
     await message.answer(
         "В какое время можно перезвонить \(Например: с 15\.00 до 23\.00 или 01\.01\.18 днем\)\.",
-        reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
+        reply_markup=InlineKeyboardMarkup(one_time_keyboard=True).add(keyboards.inline_cancel),
     )
 
 
@@ -513,7 +513,10 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
                 f"Trello card created {TICKET_TIME} {user_data['chosen_login']}"
             )
         else:
-            await call.message.answer("Что\-то пошло не так\. Попробуйте еще раз\.")
+            await call.message.answer(
+                "Что\-то пошло не так\. Попробуйте еще раз\.\n"
+                "Вы можете написать нам на почту: msu.umos@gmail.com\n"
+                "или позвонить по телефону: +7 (499) 553\-02\-17")
             await cmd_print(call.message, state)
             log.warning(
                 f"Trello card was NOT created {TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']}"
@@ -523,7 +526,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
         await call.message.answer(
             "К сожалению, Вы отправили уже 5 заявок в техподдержку сегодня. "
             "Вы можете написать нам на почту: msu.umos@gmail.com\n"
-            "или позвонить по телефону: +7 (499) 553\-02\-17",
+            "или позвонить по телефону: +7 (499) 553-02-17",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
         )
