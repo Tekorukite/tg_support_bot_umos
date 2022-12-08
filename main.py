@@ -523,7 +523,7 @@ async def on_startup(dp):
                         fullname text NOT NULL,
                         login text NOT NULL,
                         phone text NOT NULL,
-                        request_date date DEFAULT CURRENT_DATE
+                        request_date date DEFAULT CURRENT_DATE,
                         FOREIGN KEY (user_id)
                         REFERENCES subscribers (user_id) ON DELETE CASCADE
                         );""")
