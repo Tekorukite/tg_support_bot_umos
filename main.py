@@ -515,7 +515,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
         )
-        print("SPAMER DETECTED")
+        log.warning(f"SPAMER DETECTED login: {user_data['chosen_login']}, name: {user_data['chosen_name']}, {user_data['chosen_phone']}")
 
 
 @dp.message_handler(state="*")
