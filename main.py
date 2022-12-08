@@ -312,7 +312,7 @@ async def cmd_support(message: types.Message, state: FSMContext) -> None:
             user,
         )
         db.commit()
-        print(f"Added user {user[0]} with еп_user_id={user[1]}")
+        print(f"Added user {user[0]} with tg_user_id={user[1]}")
     cur.execute(
         f"""SELECT * FROM tickets 
         WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id})
@@ -476,20 +476,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
     )
     row = cur.fetchall()
     if row is None or len(row) < 5:
-        cur.execute(
-            f"""INSERT INTO tickets 
-                    (user_id, dorm, building, room, fullname, login, phone, request_date) 
-                    VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.from_user.id}), %s, %s, %s, %s, %s, %s, CURRENT_DATE);""",
-            (
-                user_data["chosen_dormitory"],
-                user_data["chosen_building"],
-                user_data["chosen_room"],
-                user_data["chosen_name"],
-                user_data["chosen_login"],
-                user_data["chosen_phone"],
-            ),
-        )
-        db.commit()
+        
         TICKET_TIME = datetime.now(MOSCOW).strftime("%d-%m-%Y %H:%M:%S")
         trello_headers = {"Accept": "application/json"}
         trello_query = {
@@ -504,6 +491,20 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
             "POST", TRELLO_URL, headers=trello_headers, params=trello_query
         )
         if trello_sent:
+            cur.execute(
+                f"""INSERT INTO tickets 
+                        (user_id, dorm, building, room, fullname, login, phone, request_date) 
+                        VALUES((SELECT user_id FROM subscribers WHERE tg_user_id={call.from_user.id}), %s, %s, %s, %s, %s, %s, CURRENT_DATE);""",
+                (
+                    user_data["chosen_dormitory"],
+                    user_data["chosen_building"],
+                    user_data["chosen_room"],
+                    user_data["chosen_name"],
+                    user_data["chosen_login"],
+                    user_data["chosen_phone"],
+                ),
+            )
+            db.commit()
             await call.message.answer("Заявка успешно отправлена\!")
             await state.finish()
             await call.message.answer(
@@ -514,13 +515,15 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
             )
         else:
             await call.message.answer(
-                "Что\-то пошло не так\. Попробуйте еще раз\.\n"
-                "Вы можете написать нам на почту: msu.umos@gmail.com\n"
-                "или позвонить по телефону: +7 (499) 553\-02\-17")
+                "Что-то пошло не так. Попробуйте еще раз.\n"
+                "А еще Вы можете написать нам на почту: msu.umos@gmail.com\n"
+                "или позвонить по телефону: +7 (499) 553-02-17",
+                parse_mode="Markdown")
             await cmd_print(call.message, state)
             log.warning(
                 f"Trello card was NOT created {TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']}"
             )
+            log.warning(trello_sent.status_code)
 
     else:
         await call.message.answer(
