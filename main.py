@@ -136,8 +136,8 @@ async def send_message_custom(
         db.commit()
         return True
     return False
-    
-    
+
+
 @dp.message_handler(commands="payment", state="*")
 @dp.message_handler(lambda message: message.text.lower() == "оплата", state="*")
 async def cmd_payment(message: types.Message, state: FSMContext) -> None:
@@ -358,17 +358,17 @@ async def cmd_support(message: types.Message, state: FSMContext) -> None:
         user_data = await state.get_data()
         await message.answer(
             f"В прошлый раз Вы указали следующие данные:\n"
-                             f"Общежитие: {user_data['chosen_dormitory']}\n"
-                             f"Корпус: {user_data['chosen_building']}\n"
-                             f"Комната: {user_data['chosen_room']}\n"
-                             f"Имя: {user_data['chosen_name']}\n"
-                             f"Номер телефона: {user_data['chosen_phone']}\n"
-                             f"Логин: {user_data['chosen_login']}\n",
+            f"Общежитие: {user_data['chosen_dormitory']}\n"
+            f"Корпус: {user_data['chosen_building']}\n"
+            f"Комната: {user_data['chosen_room']}\n"
+            f"Имя: {user_data['chosen_name']}\n"
+            f"Номер телефона: {user_data['chosen_phone']}\n"
+            f"Логин: {user_data['chosen_login']}\n",
             reply_markup=InlineKeyboardMarkup(row_width=1, one_time_keyboard=True).add(
                 keyboards.inline_commit, keyboards.inline_edit, keyboards.inline_cancel
             ),
             parse_mode="",
-                             )
+        )
 
 
 @dp.message_handler(state=Support.dormitory)
@@ -469,14 +469,14 @@ async def cmd_print(message: types.Message, state: FSMContext) -> None:
     user_data = await state.get_data()
     await message.answer(
         f"Полученные данные:\n"
-                         f"Общежитие: {user_data['chosen_dormitory']}\n"
-                         f"Корпус: {user_data['chosen_building']}\n"
-                         f"Комната: {user_data['chosen_room']}\n"
-                         f"Имя: {user_data['chosen_name']}\n"
-                         f"Номер телефона: {user_data['chosen_phone']}\n"
-                         f"Логин: {user_data['chosen_login']}\n"
-                         f"Пробелма: {user_data['chosen_problem']}\n"
-                         f"Время звонка: {user_data['chosen_time']}\n",
+        f"Общежитие: {user_data['chosen_dormitory']}\n"
+        f"Корпус: {user_data['chosen_building']}\n"
+        f"Комната: {user_data['chosen_room']}\n"
+        f"Имя: {user_data['chosen_name']}\n"
+        f"Номер телефона: {user_data['chosen_phone']}\n"
+        f"Логин: {user_data['chosen_login']}\n"
+        f"Пробелма: {user_data['chosen_problem']}\n"
+        f"Время звонка: {user_data['chosen_time']}\n",
         reply_markup=InlineKeyboardMarkup(row_width=1, one_time_keyboard=True).add(
             keyboards.inline_send, keyboards.inline_edit, keyboards.inline_cancel
         ),
@@ -512,21 +512,21 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
                 user_data["chosen_login"],
                 user_data["chosen_phone"],
             ),
-                    )
+        )
         db.commit()
         TICKET_TIME = datetime.now(MOSCOW).strftime("%d-%m-%Y %H:%M:%S")
-            trello_headers = {"Accept": "application/json"}
-            trello_query = {
+        trello_headers = {"Accept": "application/json"}
+        trello_query = {
             "idList": TRELLO_DORM_IDLIST[f"{user_data['chosen_dormitory']}"],
             "key": TRELLO_KEY,
             "token": TRELLO_TOKEN,
             "name": f"{TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']} from TG_BOT",
             "desc": f"{user_data['chosen_name']}\n{user_data['chosen_phone']}\n{user_data['chosen_login']}\n{user_data['chosen_dormitory']} {user_data['chosen_building']} {user_data['chosen_room']}\n{TICKET_TIME}\n{user_data['chosen_problem']}\n{user_data['chosen_time']}",
-            }
-        
+        }
+
         trello_sent = requests.request(
             "POST", TRELLO_URL, headers=trello_headers, params=trello_query
-            )
+        )
         if trello_sent:
             # log.info(json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": ")))
             await call.message.answer("Заявка успешно отправлена\!")
@@ -543,12 +543,12 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
             await log.warning(
                 f"Trello card was NOT created {TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']}"
             )
-            
+
     else:
         await call.message.answer(
             "К сожалению, Вы отправили уже 5 заявок в техподдержку сегодня. "
-                                  "Вы можете написать нам на почту: msu.umos@gmail.com\n"
-                                  "или позвонить по телефону: +7 (499) 553-02-17",
+            "Вы можете написать нам на почту: msu.umos@gmail.com\n"
+            "или позвонить по телефону: +7 (499) 553-02-17",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
         )
