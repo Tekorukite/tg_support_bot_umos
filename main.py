@@ -508,13 +508,13 @@ async def cmd_unknown(message: types.Message, state: FSMContext) -> None:
 
 async def on_startup(dp):
     await bot.set_webhook(WEBHOOK_URL)
-    await cur.execute(f"""CREATE TABLE IF NOT EXISTS subscribers (
+    cur.execute(f"""CREATE TABLE IF NOT EXISTS subscribers (
                         user_id serial PRIMARY KEY,
                         name text,
                         tg_user_id bigint,
                         reg_date date DEFAULT CURRENT_DATE
                         );""")
-    await cur.execute(f"""CREATE TABLE IF NOT EXISTS tickets (
+    cur.execute(f"""CREATE TABLE IF NOT EXISTS tickets (
                         ticket_id serial PRIMARY KEY,
                         user_id integer,
                         dorm text NOT NULL,
@@ -527,7 +527,7 @@ async def on_startup(dp):
                         FOREIGN KEY (user_id)
                         REFERENCES subscribers (user_id) ON DELETE CASCADE
                         );""")
-    await cur.execute(f"""COMMIT;""")
+    cur.execute(f"""COMMIT;""")
 
 
 async def on_shutdown(dp):
