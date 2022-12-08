@@ -453,7 +453,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
                      user_data['chosen_name'], user_data['chosen_login'], user_data['chosen_phone'])
                     )
         db.commit()
-        TICKET_TIME = datetime.now(MOSCOW).strftime('%Y-%m-%d %H:%M:%S')
+        TICKET_TIME = datetime.now(MOSCOW).strftime('%d-%m-%Y %H:%M:%S')
         if user_data['chosen_dormitory'] in ['ДСВ', 'ДСК', 'ДСШ', 'ДСЯ']:
             trello_headers = {"Accept": "application/json"}
             trello_query = {
