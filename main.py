@@ -102,42 +102,6 @@ async def cmd_cancel_button(message: types.Message, state: FSMContext) -> None:
     )
 
 
-async def send_message_custom(
-    user_id: int, text: str, disable_notification: bool = True
-) -> bool:
-    try:
-        msg = await bot.send_message(
-            user_id,
-            text,
-            disable_notification=disable_notification,
-            parse_mode="markdown",
-        )
-        # await bot.pin_chat_message(chat_id=msg.chat.id, message_id=msg.message_id)
-    except exceptions.BotBlocked:
-        log.error(f"Target [ID:{user_id}]: blocked by user")
-    except exceptions.ChatNotFound:
-        log.error(f"Target [ID:{user_id}]: invalid user ID")
-    except exceptions.RetryAfter as e:
-        log.error(
-            f"Target [ID:{user_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds."
-        )
-        await asyncio.sleep(e.timeout)
-        return await send_message_custom(user_id, text)
-    except exceptions.UserDeactivated:
-        log.error(f"Target [ID:{user_id}]: user is deactivated")
-    except exceptions.TelegramAPIError:
-        log.exception(f"Target [ID:{user_id}]: failed")
-    except:
-        log.error(f"Unexpected error")
-    else:
-        cur.execute(
-            f"""INSERT INTO broadcast (chat_id, message_id) VALUES({msg.chat.id},{msg.message_id});"""
-        )
-        db.commit()
-        return True
-    return False
-
-
 @dp.message_handler(commands="payment", state="*")
 @dp.message_handler(lambda message: message.text.lower() == "оплата", state="*")
 async def cmd_payment(message: types.Message, state: FSMContext) -> None:
@@ -528,7 +492,6 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
             "POST", TRELLO_URL, headers=trello_headers, params=trello_query
         )
         if trello_sent:
-            # log.info(json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(",", ": ")))
             await call.message.answer("Заявка успешно отправлена\!")
             await state.finish()
             await call.message.answer(
@@ -588,7 +551,8 @@ async def on_startup(dp):
                         FOREIGN KEY (user_id)
                         REFERENCES subscribers (user_id) ON DELETE CASCADE
                         );"""
-    cur.execute(f"""COMMIT;""")
+    )
+    db.commit()
 
 
 async def on_shutdown(dp):

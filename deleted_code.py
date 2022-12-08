@@ -68,3 +68,38 @@
             #await message.reply(f"Успешно удалено {count} из {len(messages)} сообщений.", parse_mode='Markdown')
             ##cur.execute("""DELETE FROM broadcast;""")
             #db.commit()
+
+
+#async def send_message_custom(
+    #user_id: int, text: str, disable_notification: bool = True
+#) -> bool:
+    #try:
+        #msg = await bot.send_message(
+            #user_id,
+            #text,
+            #disable_notification=disable_notification,
+            #parse_mode="markdown",
+        #)
+    #except exceptions.BotBlocked:
+        #log.error(f"Target [ID:{user_id}]: blocked by user")
+    #except exceptions.ChatNotFound:
+        #log.error(f"Target [ID:{user_id}]: invalid user ID")
+    #except exceptions.RetryAfter as e:
+        #log.error(
+#            f"Target [ID:{user_id}]: Flood limit is exceeded. Sleep {e.timeout} seconds."
+#        )
+#        await asyncio.sleep(e.timeout)
+#        return await send_message_custom(user_id, text)
+#    except exceptions.UserDeactivated:
+#        log.error(f"Target [ID:{user_id}]: user is deactivated")
+#    except exceptions.TelegramAPIError:
+#        log.exception(f"Target [ID:{user_id}]: failed")
+#    except:
+#        log.error(f"Unexpected error")
+#    else:
+#        cur.execute(
+#            f"""INSERT INTO broadcast (chat_id, message_id) VALUES({msg.chat.id},{msg.message_id});"""
+#        )
+#        db.commit()
+#        return True
+#    return False
