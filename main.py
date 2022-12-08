@@ -302,6 +302,18 @@ async def cmd_support_inline(call: types.CallbackQuery, state: FSMContext) -> No
 async def cmd_support(message: types.Message, state: FSMContext) -> None:
     await state.finish()
     cur.execute(
+        "SELECT * FROM subscribers WHERE tg_user_id = %s;", [message.from_user.id]
+    )
+    row = cur.fetchall()
+    if row is None or len(row) == 0:
+        user = (message.from_user.first_name, message.from_user.id)
+        cur.execute(
+            """INSERT INTO subscribers (name, tg_user_id, reg_date) VALUES(%s, %s, CURRENT_DATE);""",
+            user,
+        )
+        cur.execute("COMMIT;")
+        print(f"Added user {user[0]} with userid={user[1]}")
+    cur.execute(
         f"""SELECT * FROM tickets 
         WHERE user_id=(SELECT user_id FROM subscribers WHERE tg_user_id={message.from_user.id})
         ORDER BY ticket_id DESC
