@@ -501,7 +501,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
                 f"Trello card created {TICKET_TIME} {user_data['chosen_login']}"
             )
         else:
-            await call.message.answer("Что-то пошло не так\. Попробуйте еще раз\.")
+            await call.message.answer("Что\-то пошло не так\. Попробуйте еще раз\.")
             await cmd_print(call.message, state)
             log.warning(
                 f"Trello card was NOT created {TICKET_TIME} {user_data['chosen_login']} {user_data['chosen_phone']}"
@@ -511,7 +511,7 @@ async def cmd_send(call: types.CallbackQuery, state: FSMContext) -> None:
         await call.message.answer(
             "К сожалению, Вы отправили уже 5 заявок в техподдержку сегодня. "
             "Вы можете написать нам на почту: msu.umos@gmail.com\n"
-            "или позвонить по телефону: +7 (499) 553-02-17",
+            "или позвонить по телефону: +7 (499) 553\-02\-17",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup().add(keyboards.inline_cancel),
         )
