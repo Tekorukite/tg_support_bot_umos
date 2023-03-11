@@ -26,8 +26,8 @@ TRELLO_DORM_IDLIST = {
     'ГЗ': '5d491ea65f2dce023c5237e8',
     'ДСЛ': '5d4916a59457c06e21cdf441',
     'ФДС': '5d4924e8c2ef6b4b45ca2a46',
-    'ДСВ': '5d49250b9ba68c1bbe7f94e',
-    'ДСК': '5d49250b9ba68c1bbe7f94e',
-    'ДСШ': '5d49250b9ba68c1bbe7f94e',
-    'ДСЯ': '5d49250b9ba68c1bbe7f94e'
+    'ДСВ': '5d49250b9ba68c1bbe7f94e8',
+    'ДСК': '5d49250b9ba68c1bbe7f94e8',
+    'ДСШ': '5d49250b9ba68c1bbe7f94e8',
+    'ДСЯ': '5d49250b9ba68c1bbe7f94e8'
 }
